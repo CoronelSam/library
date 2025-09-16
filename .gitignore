@@ -1,0 +1,61 @@
+# ---- Dependencias Node ----
+node_modules/
+
+# ---- Logs ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- PIDs ----
+*.pid
+*.seed
+*.pid.lock
+
+# ---- Cobertura / builds / caches ----
+coverage/
+dist/
+build/
+.cache/
+.tmp/
+
+# ---- Archivos de entorno y credenciales ----
+.env
+.env.*.local
+# Si algún día necesitas un .env.example, créalo manualmente y NO lo ignores.
+
+# ---- Subidas locales (usa Cloudinary en producción) ----
+backend/uploads/
+
+# ---- Sistemas Operativos ----
+.DS_Store
+Thumbs.db
+Icon?
+
+# ---- Editores / IDE ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*.orig
+
+# ---- Herramientas de despliegue (añade si las usas) ----
+.vercel/
+.netlify/
+
+# ---- PM2 / procesos ----
+.pm2/
+
+# ---- Otros posibles artefactos ----
+*.tgz
+*.tar
+*.zip
+
+# ---- Git merge / conflictos ----
+*.mergeBackup
+
+# ---- Nota ----
+# Mantén en el repo únicamente el código fuente y archivos necesarios.
+# Revisa antes de commitear que no subes credenciales.

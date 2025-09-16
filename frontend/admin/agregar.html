@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agregar Libro</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background-color: #f0f2f5; }
+    .navbar { background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .navbar-brand { font-weight: 600; color: #343a40 !important; }
+    .nav-link { color: #555 !important; }
+    .nav-link.active { font-weight: 600; color: #0d6efd !important; }
+    .card-form {
+      border: none;
+      border-radius: 1rem;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .genre-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    .genre-suggestion {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    .genre-suggestion:hover,
+    .genre-suggestion.selected {
+      background-color: #f8f9fa;
+    }
+    .genre-suggestion:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="admin.html"><i class="bi bi-shield-lock-fill me-2"></i>Admin Biblioteca</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="admin.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link active" href="agregar.html"><i class="bi bi-plus-circle"></i> Agregar Libro</a></li>
+        <li class="nav-item"><a class="nav-link" href="editar.html"><i class="bi bi-pencil-square"></i> Editar/Eliminar</a></li>
+        <li class="nav-item"><a class="nav-link" href="gestion-usuarios.html"><i class="bi bi-people"></i> Usuarios</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-1"></i><span id="nombreUsuario">Usuario</span>
+            <span id="rolBadge" class="badge bg-secondary ms-1">Rol</span>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item text-danger" href="#" onclick="logout()">
+              <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+            </a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card card-form">
+                <div class="card-body p-5">
+                    <h2 class="card-title text-center fw-bold mb-4">Registrar Nuevo Libro</h2>
+                    <form id="libro-form" autocomplete="off">
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Título</label>
+                            <input type="text" id="titulo" class="form-control form-control-lg" placeholder="Ej: Cien Años de Soledad" required autocomplete="off" autocapitalize="none" spellcheck="false">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Autor</label>
+                            <input type="text" id="autor" class="form-control form-control-lg" placeholder="Ej: Gabriel García Márquez" required autocomplete="off" autocapitalize="none" spellcheck="false">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">Género</label>
+                                <select class="form-select form-select-lg" id="genero">
+                                    <option selected disabled>Seleccionar género...</option>
+                                    <option>Aventura</option>
+                                    <option>Biografía</option>
+                                    <option>Ciencia</option>
+                                    <option>Ciencia Ficción</option>
+                                    <option>Clásicos</option>
+                                    <option>Comedia</option>
+                                    <option>Cómics</option>
+                                    <option>Crimen</option>
+                                    <option>Drama</option>
+                                    <option>Economía</option>
+                                    <option>Ensayo</option>
+                                    <option>Fantasía</option>
+                                    <option>Ficción</option>
+                                    <option>Filosofía</option>
+                                    <option>Historia</option>
+                                    <option>Horror</option>
+                                    <option>Humor</option>
+                                    <option>Infantil</option>
+                                    <option>Juvenil</option>
+                                    <option>Literatura</option>
+                                    <option>Matemáticas</option>
+                                    <option>Medicina</option>
+                                    <option>Misterio</option>
+                                    <option>Música</option>
+                                    <option>Negocios</option>
+                                    <option>No Ficción</option>
+                                    <option>Novela</option>
+                                    <option>Novela Gráfica</option>
+                                    <option>Novela Histórica</option>
+                                    <option>Novela Negra</option>
+                                    <option>Novela Romántica</option>
+                                    <option>Poesía</option>
+                                    <option>Política</option>
+                                    <option>Psicología</option>
+                                    <option>Religión</option>
+                                    <option>Romance</option>
+                                    <option>Salud</option>
+                                    <option>Suspenso</option>
+                                    <option>Teatro</option>
+                                    <option>Tecnología</option>
+                                    <option>Terror</option>
+                                    <option>Thriller</option>
+                                    <option>Viajes</option>
+                                    <option>Western</option>
+                                    <option>Otro</option>
+                                </select>
+                                <!-- Alternativa: Input con sugerencias -->
+                                <div class="mt-3">
+                                    <label class="form-label fw-semibold text-muted">O escribe directamente:</label>
+                                    <div class="position-relative">
+               <input type="text" id="genero-input" class="form-control form-control-lg" 
+                 placeholder="Escribe el género del libro..." 
+                 autocomplete="off" autocapitalize="none" spellcheck="false">
+                                        <div id="genre-suggestions" class="genre-suggestions"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">Editorial</label>
+                                <input type="text" id="editorial" class="form-control form-control-lg" placeholder="Ej: Penguin Random House" autocomplete="off" autocapitalize="none" spellcheck="false">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">Año de Publicación</label>
+                                <input type="number" id="año_publicacion" class="form-control form-control-lg" 
+                                       placeholder="Ej: 2023" min="1" max="2025">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Descripción</label>
+                            <textarea id="descripcion" class="form-control" rows="3" 
+                                    placeholder="Breve descripción del libro (opcional)"></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Portada del Libro</label>
+                            <input type="file" id="portada" class="form-control form-control-lg" accept="image/*">
+                            <div class="form-text">Opcional: Formatos permitidos: JPG, PNG, WebP</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">PDF del Libro</label>
+                            <input type="file" id="archivo" class="form-control form-control-lg" accept=".pdf">
+                            <div class="form-text">Opcional: Solo archivos PDF</div>
+                        </div>
+                        
+                        <!-- Área de mensajes -->
+                        <div id="message-area"></div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg" id="guardar-btn">
+                                <i class="bi bi-check-circle-fill me-2"></i>Guardar Libro
+                            </button>
+                            <a href="admin.html" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i>Cancelar y Volver
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<footer class="footer text-center">
+  <div class="container">
+    <p class="mb-0">Derechos reservados © 2025</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/config/api.js"></script>
+<script src="../js/config/constants.js"></script>
+<script src="../js/services/libroService.js"></script>
+<script src="../js/utils/validation.js"></script>
+<script src="../js/utils/ui.js"></script>
+<script src="../js/utils/generoAutocomplete.js"></script>
+<script src="js/adminAuth.js"></script>
+<script src="js/agregar.js"></script>
+
+</body>
+</html>

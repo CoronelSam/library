@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biblioteca Digital - Inicio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f0f2f5;
+    }
+    .hero-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4rem 0;
+    }
+    .feature-card {
+      transition: transform 0.3s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#">
+        <i class="bi bi-book"></i> Biblioteca Digital
+      </a>
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link" href="login.html">Iniciar Sesión</a>
+        <a class="nav-link" href="registro.html">Registrarse</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container text-center">
+      <h1 class="display-4 fw-bold mb-4">Bienvenido a tu Biblioteca Digital</h1>
+      <p class="lead mb-4">Descubre, organiza y disfruta de miles de libros en un solo lugar</p>
+      <div class="d-flex gap-3 justify-content-center">
+        <a href="login.html" class="btn btn-light btn-lg">Iniciar Sesión</a>
+        <a href="registro.html" class="btn btn-outline-light btn-lg">Registrarse</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-5">
+    <div class="container">
+      <div class="row text-center mb-5">
+        <div class="col">
+          <h2 class="fw-bold">¿Por qué elegir nuestra biblioteca?</h2>
+          <p class="text-muted">Funciones diseñadas para amantes de los libros</p>
+        </div>
+      </div>
+      
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm feature-card">
+            <div class="card-body text-center p-4">
+              <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                <i class="bi bi-search text-primary fs-3"></i>
+              </div>
+              <h5 class="card-title">Búsqueda Avanzada</h5>
+              <p class="card-text text-muted">Encuentra cualquier libro por título, autor, género o categoría de forma rápida y sencilla.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm feature-card">
+            <div class="card-body text-center p-4">
+              <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                <i class="bi bi-heart text-success fs-3"></i>
+              </div>
+              <h5 class="card-title">Lista de Favoritos</h5>
+              <p class="card-text text-muted">Guarda tus libros favoritos y crea tu biblioteca personal para acceso rápido.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm feature-card">
+            <div class="card-body text-center p-4">
+              <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                <i class="bi bi-diagram-3 text-warning fs-3"></i>
+              </div>
+              <h5 class="card-title">Organización Inteligente</h5>
+              <p class="card-text text-muted">Visualiza tu colección en forma de árbol y navega por categorías de manera intuitiva.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-light py-5">
+    <div class="container text-center">
+      <h3 class="fw-bold mb-3">¿Listo para comenzar?</h3>
+      <p class="text-muted mb-4">Únete a nuestra comunidad de lectores y descubre tu próximo libro favorito</p>
+      <a href="registro.html" class="btn btn-primary btn-lg">Crear Cuenta Gratis</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-light py-4">
+    <div class="container text-center">
+      <p class="mb-0">&copy; 2025 Biblioteca Digital. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
