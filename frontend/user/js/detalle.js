@@ -107,11 +107,12 @@ class DetalleLibro {
 
     descargarPDF(libroId) {
         try {
+            const proxyUrl = `${this.apiUrl}/${libroId}/download/proxy`;
+            window.open(proxyUrl, '_blank');
+        } catch (error) {
+            console.error('Error al descargar PDF (proxy):', error);
             const url = `${this.apiUrl}/${libroId}/download`;
             window.open(url, '_blank');
-        } catch (error) {
-            console.error('Error al descargar PDF:', error);
-            alert('Error al descargar el archivo PDF');
         }
     }
 

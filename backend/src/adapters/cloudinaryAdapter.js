@@ -233,29 +233,14 @@ class CloudinaryAdapter {
      */
     generarURLDescarga(url, nombreArchivo) {
         try {
-            
-            // Primero intentar extraer el public_id de diferentes formatos de URL
-            let publicId = this.extraerPublicId(url);
-            
-            if (!publicId) {
-                console.warn('⚠️ No se pudo extraer public_id, usando URL original');
-                return url;
+            // Strategy simplificada: usar la secure_url original y añadir fl_attachment
+            let nombreLimpio = nombreArchivo || 'archivo.pdf';
+            if (!/\.pdf$/i.test(nombreLimpio)) {
+                nombreLimpio = nombreLimpio.replace(/\.+$/, '');
+                nombreLimpio += '.pdf';
             }
-
-
-            // Generar URL con parámetros de descarga usando resource_type raw
-            const urlDescarga = this.cloudinary.url(publicId, {
-                resource_type: 'raw',
-                secure: true,
-                flags: 'attachment'
-            });
-
-            // Agregar parámetro de nombre de archivo
-            const separator = urlDescarga.includes('?') ? '&' : '?';
-            const urlFinal = `${urlDescarga}${separator}response-content-disposition=attachment;filename="${encodeURIComponent(nombreArchivo)}"`;
-            
-            // URL de descarga generada (log removido para producción)
-            return urlFinal;
+            const separador = url.includes('?') ? '&' : '?';
+            return `${url}${separador}fl_attachment=${encodeURIComponent(nombreLimpio)}`;
 
         } catch (error) {
             console.error('❌ Error al generar URL de descarga:', error);

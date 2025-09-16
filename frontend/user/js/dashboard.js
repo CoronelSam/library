@@ -1,4 +1,3 @@
-// JavaScript para el dashboard de usuario
 class Dashboard {
     constructor() {
         this.libros = [];
@@ -171,11 +170,10 @@ function verPDF(libroId) {
 
 function descargarPDF(libroId) {
     try {
-        const url = `http://localhost:3001/api/libros/${libroId}/download`;
-        window.open(url, '_blank');
+        window.open(`http://localhost:3001/api/libros/${libroId}/download/proxy`, '_blank');
     } catch (error) {
-        console.error('Error al descargar PDF:', error);
-        alert('Error al descargar el archivo PDF');
+        console.error('Error al iniciar descarga (proxy):', error);
+        window.open(`http://localhost:3001/api/libros/${libroId}/download`, '_blank');
     }
 }
 

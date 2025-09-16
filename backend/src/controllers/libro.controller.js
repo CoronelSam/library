@@ -317,36 +317,60 @@ class LibroController {
     async descargarPDF(req, res) {
         try {
             const { id } = req.params;
-            
             const libro = await Libro.findByPk(id);
             if (!libro) {
-                return res.status(404).json({
-                    success: false,
-                    mensaje: 'Libro no encontrado'
-                });
+                return res.status(404).json({ success: false, mensaje: 'Libro no encontrado' });
             }
-
             if (!libro.archivo) {
-                return res.status(404).json({
-                    success: false,
-                    mensaje: 'Este libro no tiene archivo PDF disponible'
-                });
+                return res.status(404).json({ success: false, mensaje: 'Este libro no tiene archivo PDF disponible' });
             }
-
-            // Crear nombre de archivo sanitizado
             const nombreArchivo = `${libro.titulo.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${libro.autor.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.pdf`;
-            
-            // Obtener URL de descarga desde Cloudinary
             const urlDescarga = cloudinaryAdapter.generarURLDescarga(libro.archivo, nombreArchivo);
-            
-            res.redirect(urlDescarga);
+            return res.redirect(urlDescarga);
         } catch (error) {
             console.error('❌ Error al descargar PDF:', error);
-            res.status(500).json({
-                success: false,
-                error: error.message,
-                mensaje: 'Error al descargar el archivo PDF'
-            });
+            return res.status(500).json({ success: false, error: error.message, mensaje: 'Error al descargar el archivo PDF' });
+        }
+    }
+
+    // Descargar PDF forzando descarga
+    async descargarPDFProxy(req, res) {
+        try {
+            const { id } = req.params;
+            const libro = await Libro.findByPk(id);
+            if (!libro) {
+                return res.status(404).json({ success: false, mensaje: 'Libro no encontrado' });
+            }
+            if (!libro.archivo) {
+                return res.status(404).json({ success: false, mensaje: 'Este libro no tiene archivo PDF disponible' });
+            }
+            const nombreArchivo = `${libro.titulo.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${libro.autor.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.pdf`;
+
+            // Usar fetch nativo (Node >=18) para obtener el stream desde Cloudinary
+            const respuesta = await fetch(libro.archivo);
+            if (!respuesta.ok) {
+                return res.status(502).json({ success: false, mensaje: 'No se pudo obtener el archivo remoto', status: respuesta.status });
+            }
+
+            // Headers para forzar descarga
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(nombreArchivo)}"`);
+            // Evitar caching agresivo
+            res.setHeader('Cache-Control', 'private, max-age=0, no-cache');
+
+            // Stream
+            if (respuesta.body.pipe) {
+                // Si es un stream clásico
+                respuesta.body.pipe(res);
+            } else {
+                // Web stream -> convertir
+                const nodeStream = require('stream');
+                const readable = nodeStream.Readable.fromWeb(respuesta.body);
+                readable.pipe(res);
+            }
+        } catch (error) {
+            console.error('❌ Error en proxy de descarga:', error);
+            return res.status(500).json({ success: false, mensaje: 'Error interno en proxy de descarga', error: error.message });
         }
     }
 

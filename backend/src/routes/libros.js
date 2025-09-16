@@ -20,6 +20,7 @@ router.get('/:id', libroController.obtenerPorId);
 // Rutas para PDFs
 router.get('/:id/pdf', libroController.obtenerPDF);
 router.get('/:id/download', libroController.descargarPDF);
+router.get('/:id/download/proxy', libroController.descargarPDFProxy);
 
 // Rutas con manejo de archivos
 router.post('/', 

@@ -289,6 +289,14 @@ class LibroService {
             throw error;
         }
     }
+
+    // Nota: Descarga manejada directamente en UI (dashboard/detalle) para evitar duplicar helpers aquí.
+    // Si se requiere en el futuro: 
+    // static crearURLDescarga(libroId, proxy = true) {
+    //     return proxy 
+    //        ? `${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/download/proxy` 
+    //        : `${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/download`;
+    // }
 }
 
 // Exportar servicio
