@@ -81,50 +81,34 @@ class DetalleLibro {
             if (botonesPDF) botonesPDF.style.display = 'block';
             if (mensajeNoPDF) mensajeNoPDF.style.display = 'none';
 
-            // Configurar eventos de los botones
+            // Configurar eventos reutilizando LibroService
             if (btnVerPDF) {
-                btnVerPDF.onclick = () => this.verPDF(libro.id);
+                btnVerPDF.onclick = (e) => {
+                    e.preventDefault();
+                    if (window.LibroService && window.LibroService.abrirPDF) {
+                        window.LibroService.abrirPDF(libro.id);
+                    } else {
+                        window.open(`${this.apiUrl}/${libro.id}/pdf`, '_blank');
+                    }
+                };
             }
             if (btnDescargarPDF) {
-                btnDescargarPDF.onclick = () => this.descargarPDF(libro.id);
+                btnDescargarPDF.onclick = (e) => {
+                    e.preventDefault();
+                    if (window.LibroService && window.LibroService.descargarPDFProxy) {
+                        window.LibroService.descargarPDFProxy(libro.id);
+                    } else if (window.LibroService && window.LibroService.descargarPDF) {
+                        window.LibroService.descargarPDF(libro.id);
+                    } else {
+                        // Fallback directo
+                        window.open(`${this.apiUrl}/${libro.id}/download/proxy`, '_blank');
+                    }
+                };
             }
         } else {
             // Mostrar mensaje de no disponible
             if (botonesPDF) botonesPDF.style.display = 'none';
             if (mensajeNoPDF) mensajeNoPDF.style.display = 'block';
-        }
-    }
-
-    verPDF(libroId) {
-        try {
-            if (!window.librosDownload || !window.librosDownload.verPDF) {
-                console.warn('[DetalleLibro] librosDownload no disponible, usando fallback directo.');
-                const url = `${this.apiUrl}/${libroId}/pdf`;
-                return window.open(url, '_blank');
-            }
-            window.librosDownload.verPDF(libroId);
-        } catch (error) {
-            console.error('Error al abrir PDF:', error);
-            alert('Error al abrir el archivo PDF');
-        }
-    }
-
-    descargarPDF(libroId) {
-        try {
-            if (!window.librosDownload || !window.librosDownload.descargarPDF) {
-                console.warn('[DetalleLibro] librosDownload no disponible, fallback descarga directa.');
-                const url = `${this.apiUrl}/${libroId}/download/proxy`;
-                return window.open(url, '_blank');
-            }
-            window.librosDownload.descargarPDF(libroId, { proxy: true, fallback: true });
-        } catch (error) {
-            console.error('Error al descargar PDF (proxy):', error);
-            if (window.librosDownload && window.librosDownload.descargarPDF) {
-                window.librosDownload.descargarPDF(libroId, { proxy: false });
-            } else {
-                const url = `${this.apiUrl}/${libroId}/download`;
-                window.open(url, '_blank');
-            }
         }
     }
 

@@ -208,6 +208,9 @@ class LibroController {
             // Normalizar datos antes de actualizar
             const datosNormalizados = normalizarDatosLibro(datosActualizados);
 
+            // Bandera para eliminar archivo PDF existente
+            const eliminarArchivo = datosActualizados.removeArchivo === 'true' || datosActualizados.removeArchivo === true;
+
             // Verificar si realmente hay archivos válidos para procesar
             const tienePortadaNueva = archivos && archivos.portada && archivos.portada[0] && archivos.portada[0].size > 0;
             const tieneArchivoNuevo = archivos && archivos.archivo && archivos.archivo[0] && archivos.archivo[0].size > 0;
@@ -215,13 +218,13 @@ class LibroController {
 
             // Actualizar usando el servicio apropiado
             let libroActualizado;
-            if (tienePortadaNueva || tieneArchivoNuevo) {
+            if (tienePortadaNueva || tieneArchivoNuevo || eliminarArchivo) {
                 // Crear objeto de archivos solo con los que realmente existen
                 const archivosValidos = {};
                 if (tienePortadaNueva) archivosValidos.portada = archivos.portada;
                 if (tieneArchivoNuevo) archivosValidos.archivo = archivos.archivo;
                 
-                libroActualizado = await libroService.actualizarLibroConArchivos(id, datosNormalizados, archivosValidos);
+                libroActualizado = await libroService.actualizarLibroConArchivos(id, { ...datosNormalizados, eliminarArchivo }, archivosValidos);
             } else {
                 libroActualizado = await libroService.actualizarLibro(id, datosNormalizados);
                 

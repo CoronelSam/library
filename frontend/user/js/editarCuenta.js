@@ -20,40 +20,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     mensajeEstado.className = 'mb-3 small';
     mensajeEstado.textContent = '';
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
 
     const nuevoUsuario = document.getElementById('nuevoUsuario').value.trim();
     const nuevoEmail = document.getElementById('nuevoEmail').value.trim();
+    const claveActual = document.getElementById('claveActual').value;
     const nuevaClave = document.getElementById('nuevaClave').value;
     const confirmarClave = document.getElementById('confirmarClave').value;
 
     const payload = {};
 
     if (nuevoUsuario) {
-      if (!/^[a-zA-Z0-9]{5,50}$/.test(nuevoUsuario)) {
-        mostrarError('Usuario inválido: 5-50 caracteres alfanuméricos.');
-        return;
-      }
+      const rUser = UserAccountValidation.validarUsuario(nuevoUsuario);
+      if (!rUser.valido) { mostrarError(rUser.error); return; }
       payload.usuario = nuevoUsuario;
     }
 
     if (nuevoEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(nuevoEmail)) {
-        mostrarError('Email inválido.');
-        return;
-      }
+      const rEmail = UserAccountValidation.validarEmail(nuevoEmail);
+      if (!rEmail.valido) { mostrarError(rEmail.error); return; }
       payload.email = nuevoEmail;
     }
 
-    if (nuevaClave || confirmarClave) {
-      if (nuevaClave.length < 8) {
-        mostrarError('La contraseña debe tener al menos 8 caracteres.');
-        return;
-      }
-      if (nuevaClave !== confirmarClave) {
-        mostrarError('Las contraseñas no coinciden.');
-        return;
-      }
+    // Validación de cambio de contraseña
+    if (nuevaClave || confirmarClave || claveActual) {
+      if (!claveActual) { mostrarError('Debes ingresar tu contraseña actual para cambiarla.'); return; }
+      const rPass = UserAccountValidation.validarClave(nuevaClave);
+      if (!rPass.valido) { mostrarError(rPass.error); return; }
+      const rConfirm = UserAccountValidation.validarConfirmacion(confirmarClave, nuevaClave);
+      if (!rConfirm.valido) { mostrarError(rConfirm.error); return; }
+      payload.claveActual = claveActual;
       payload.clave = nuevaClave;
     }
 
@@ -62,25 +59,62 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    mensajeEstado.textContent = 'Guardando...';
+    try {
+      mensajeEstado.textContent = 'Guardando...';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+      }
 
-    const resp = await authService.actualizarPerfil(payload);
-    if (resp.success) {
-      mensajeEstado.textContent = resp.message || 'Perfil actualizado.';
-      mensajeEstado.classList.add('text-success');
-      // Actualizar campos actuales si cambió usuario/email
-      const user = authService.getCurrentUser();
-      document.getElementById('usuarioActual').value = user.usuario;
-      document.getElementById('emailActual').value = user.email;
-      form.reset();
-    } else {
-      mostrarError(resp.message || 'Error al actualizar.');
+      const resp = await authService.actualizarPerfil(payload);
+      console.debug('[EditarCuenta] Respuesta actualizarPerfil:', resp);
+      if (resp.success) {
+        const user = authService.getCurrentUser();
+        document.getElementById('usuarioActual').value = user.usuario;
+        document.getElementById('emailActual').value = user.email;
+        form.reset();
+        mensajeEstado.textContent = '';
+        safeToast('Perfil actualizado correctamente', 'success');
+        // Redirección/ cierre
+        setTimeout(() => {
+          try {
+            if (window.opener) {
+              window.close();
+            } else {
+              window.location.href = 'dashboard.html';
+            }
+          } catch (redirErr) {
+            console.warn('Redirección fallida, fallback manual:', redirErr);
+            window.location.assign('dashboard.html');
+          }
+        }, 1500);
+      } else {
+        mostrarError(resp.message || 'Error al actualizar.');
+      }
+    } catch (err) {
+      console.error('[EditarCuenta] Error inesperado:', err);
+      mostrarError('Error de red o inesperado.');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHTML;
+      }
     }
   });
 
   function mostrarError(msg) {
     mensajeEstado.textContent = msg;
     mensajeEstado.classList.add('text-danger');
+  }
+
+  function safeToast(msg, tipo='info', duracion=3000) {
+    if (window.UIUtils && typeof UIUtils.mostrarToast === 'function') {
+      UIUtils.mostrarToast(msg, tipo, duracion);
+    } else if (typeof window.mostrarToast === 'function') {
+      window.mostrarToast(msg, tipo, duracion);
+    } else {
+      console.log(`[TOAST:${tipo}]`, msg);
+    }
   }
 
   // Logout link

@@ -122,8 +122,14 @@ class LibroService {
                 throw new Error('Libro no encontrado');
             }
 
+            const eliminarArchivo = datosActualizados.eliminarArchivo === true || datosActualizados.eliminarArchivo === 'true';
+
+            // No mantener la bandera en update directo
+            const datosBasicos = { ...datosActualizados };
+            delete datosBasicos.eliminarArchivo;
+
             // Actualizar datos básicos primero
-            await libro.update(datosActualizados);
+            await libro.update(datosBasicos);
 
             let urlPortada = libro.portada; // Mantener portada actual por defecto
             let urlArchivo = libro.archivo; // Mantener archivo actual por defecto
@@ -174,11 +180,24 @@ class LibroService {
                     urlArchivo = resultadoArchivo.url;
                 }
 
-                // Actualizar el libro con las nuevas URLs si se subieron archivos
-                if (archivos.portada || archivos.archivo) {
+                // Eliminar archivo existente si se solicitó y no se subió uno nuevo
+                if (eliminarArchivo && !archivos.archivo && libro.archivo) {
+                    try {
+                        const publicIdAnterior = cloudinaryAdapter.extraerPublicId(libro.archivo);
+                        if (publicIdAnterior) {
+                            await cloudinaryAdapter.eliminarArchivo(publicIdAnterior);
+                        }
+                        urlArchivo = null;
+                    } catch (error) {
+                        console.warn('⚠️ No se pudo eliminar el archivo solicitado:', error.message);
+                    }
+                }
+
+                // Actualizar el libro con las nuevas URLs si se subieron archivos o se eliminó
+                if (archivos.portada || archivos.archivo || eliminarArchivo) {
                     const datosActualizacion = {};
                     if (archivos.portada) datosActualizacion.portada = urlPortada;
-                    if (archivos.archivo) datosActualizacion.archivo = urlArchivo;
+                    if (archivos.archivo || eliminarArchivo) datosActualizacion.archivo = urlArchivo; // puede ser null
 
                     await libro.update(datosActualizacion);
                 }
@@ -293,16 +312,6 @@ class LibroService {
         }
     }
 
-    async sincronizarArbol() {
-        try {
-            await this.inicializarArbol();
-            console.log('[LibroService] Árbol sincronizado');
-            return true;
-        } catch (error) {
-            console.error('❌ Error al sincronizar:', error.message);
-            throw error;
-        }
-    }
 
     async verificarConsistencia() {
         try {

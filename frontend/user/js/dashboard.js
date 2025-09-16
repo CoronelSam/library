@@ -12,7 +12,6 @@ class Dashboard {
             return;
         }
 
-        // Verificar que solo usuarios con rol 'usuario' accedan aquí
         const userRole = authService.getUserRole();
         if (userRole === 'admin' || userRole === 'mod') {
             // Redirigir al panel de administración
@@ -160,11 +159,17 @@ function irADetalle(libroId) {
 // Funciones globales para manejar PDFs
 function verPDF(libroId) {
     try {
-        if (!window.librosDownload || !window.librosDownload.verPDF) {
-            console.warn('[Dashboard] librosDownload no disponible, fallback ver directo.');
-            return window.open(`http://localhost:3001/api/libros/${libroId}/pdf`, '_blank');
+        // Priorizar LibroService helpers centralizados
+        if (window.LibroService && window.LibroService.abrirPDF) {
+            return window.LibroService.abrirPDF(libroId);
         }
-        window.librosDownload.verPDF(libroId);
+        // Fallback a util previo si existe
+        if (window.librosDownload && window.librosDownload.verPDF) {
+            return window.librosDownload.verPDF(libroId);
+        }
+        // Fallback final directo
+        const base = API_CONFIG?.FULL_ENDPOINTS?.LIBROS || (API_CONFIG?.API_URL + '/libros');
+        window.open(`${base}/${libroId}/pdf`, '_blank');
     } catch (error) {
         console.error('Error al abrir PDF:', error);
         alert('Error al abrir el archivo PDF');
@@ -173,18 +178,27 @@ function verPDF(libroId) {
 
 function descargarPDF(libroId) {
     try {
-        if (!window.librosDownload || !window.librosDownload.descargarPDF) {
-            console.warn('[Dashboard] librosDownload no disponible, fallback descarga proxy directa.');
-            return window.open(`http://localhost:3001/api/libros/${libroId}/download/proxy`, '_blank');
+        if (window.LibroService && window.LibroService.descargarPDFProxy) {
+            return window.LibroService.descargarPDFProxy(libroId);
         }
-        window.librosDownload.descargarPDF(libroId, { proxy: true, fallback: true });
+        if (window.LibroService && window.LibroService.descargarPDF) {
+            return window.LibroService.descargarPDF(libroId);
+        }
+        if (window.librosDownload && window.librosDownload.descargarPDF) {
+            return window.librosDownload.descargarPDF(libroId, { proxy: true, fallback: true });
+        }
+        const base = API_CONFIG?.FULL_ENDPOINTS?.LIBROS || (API_CONFIG?.API_URL + '/libros');
+        window.open(`${base}/${libroId}/download/proxy`, '_blank');
     } catch (error) {
         console.error('Error al iniciar descarga (proxy):', error);
-        if (window.librosDownload && window.librosDownload.descargarPDF) {
-            window.librosDownload.descargarPDF(libroId, { proxy: false });
-        } else {
-            window.open(`http://localhost:3001/api/libros/${libroId}/download`, '_blank');
+        if (window.LibroService && window.LibroService.descargarPDF) {
+            return window.LibroService.descargarPDF(libroId);
         }
+        if (window.librosDownload && window.librosDownload.descargarPDF) {
+            return window.librosDownload.descargarPDF(libroId, { proxy: false });
+        }
+        const base = API_CONFIG?.FULL_ENDPOINTS?.LIBROS || (API_CONFIG?.API_URL + '/libros');
+        window.open(`${base}/${libroId}/download`, '_blank');
     }
 }
 

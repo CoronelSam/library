@@ -88,6 +88,29 @@ class LibroService {
         window.open(url, '_blank');
     }
 
+    static pdfViewUrl(libroId) {
+        return `${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/pdf`;
+    }
+
+    static pdfDownloadUrl(libroId, { proxy = true } = {}) {
+        if (proxy) return `${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/download/proxy`;
+        return `${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/download`;
+    }
+
+    static abrirPDFProxy(libroId) {
+        // Intentar abrir proxy primero (para forzar encabezados), fallback a directo
+        const proxyUrl = this.pdfDownloadUrl(libroId, { proxy: true });
+        const win = window.open(proxyUrl, '_blank');
+        if (!win) {
+            console.warn('[LibroService] No se pudo abrir ventana proxy, fallback ver PDF');
+            window.open(this.pdfViewUrl(libroId), '_blank');
+        }
+    }
+
+    static descargarPDFProxy(libroId) {
+        window.open(this.pdfDownloadUrl(libroId, { proxy: true }), '_blank');
+    }
+
     /**
      * Verificar si un libro tiene PDF disponible
      * @param {Object} libro - Objeto libro

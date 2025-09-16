@@ -237,7 +237,7 @@ const verificarToken = async (req, res) => {
 // Actualizar perfil (usuario autenticado puede cambiar usuario, email y contraseña)
 const actualizarPerfil = async (req, res) => {
     try {
-        const { usuario, email, clave } = req.body;
+        const { usuario, email, clave, claveActual } = req.body;
 
         const usuarioActual = await Usuario.findByPk(req.usuario.id);
         if (!usuarioActual) {
@@ -269,8 +269,18 @@ const actualizarPerfil = async (req, res) => {
             updates.email = email;
         }
         if (clave) {
-            if (clave.length < 8) {
-                return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 8 caracteres' });
+            // Requerir claveActual para permitir cambio
+            if (!claveActual) {
+                return res.status(400).json({ success: false, message: 'Debes proporcionar la contraseña actual para cambiarla' });
+            }
+            const coincide = await usuarioActual.compararClave(claveActual);
+            if (!coincide) {
+                return res.status(401).json({ success: false, message: 'La contraseña actual es incorrecta' });
+            }
+            // Validar complejidad (misma que registro)
+            const regexComplejidad = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!regexComplejidad.test(clave)) {
+                return res.status(400).json({ success: false, message: 'La nueva contraseña no cumple los requisitos de seguridad' });
             }
             updates.clave = clave; // Hook beforeUpdate se encargará de hashear
         }

@@ -18,8 +18,9 @@ class EditarLibrosPage {
         this.obtenerElementos();
         this.inicializarEventListeners();
         this.inicializarModales();
-    this.inicializarAutocompletadoCompartido();
+        this.inicializarAutocompletadoCompartido();
         await this.cargarLibros();
+        this.inicializarBuscadorCompartido();
         console.log('📚 [EditarLibros] Página inicializada');
     }
 
@@ -40,6 +41,12 @@ class EditarLibrosPage {
         this.buscarInput = document.getElementById('buscar-input');
         this.buscarBtn = document.getElementById('buscar-btn');
         this.limpiarBtn = document.getElementById('limpiar-btn');
+        // Nuevos filtros múltiples
+        this.selectRecorrido = document.getElementById('selectRecorrido');
+        this.inputGenero = document.getElementById('inputGenero');
+        this.inputAutor = document.getElementById('inputAutor');
+        this.btnRefrescar = document.getElementById('btnRefrescar');
+        this.estadoBusqueda = document.getElementById('estadoBusqueda');
         this.librosTabla = document.getElementById('libros-tbody');
         this.loadingContainer = document.getElementById('loading-container');
         this.noLibrosMessage = document.getElementById('no-libros-message');
@@ -49,38 +56,95 @@ class EditarLibrosPage {
         this.editGeneroInput = document.getElementById('edit-genero-input');
         this.editGeneroSelect = document.getElementById('edit-genero-select');
         this.editGeneroSuggestions = document.getElementById('edit-genre-suggestions');
+        // Botón agregar desde búsqueda
+        this.agregarDesdeBusquedaContainer = document.getElementById('agregar-desde-busqueda-container');
+        this.agregarDesdeBusquedaBtn = document.getElementById('agregar-desde-busqueda-btn');
+        this.agregarDesdeBusquedaTitulo = document.getElementById('agregar-desde-busqueda-titulo');
     }
 
     inicializarEventListeners() {
-        // Búsqueda optimizada usando árbol
-        this._debounceId = null;
-        this.buscarInput.addEventListener('input', () => {
-            clearTimeout(this._debounceId);
-            const valor = this.buscarInput.value.trim();
-            if (!valor) {
-                // Reset a dataset local completo
-                this.librosFiltrados = [...this.libros];
-                this.paginaActual = 1;
-                this.renderizarLibros();
-                return;
-            }
-            this._debounceId = setTimeout(() => this.ejecutarBusquedaRemota(valor), 300);
-        });
+        const MIN_QUERY = 2;
+        const debounceDelay = APP_CONSTANTS.UI_CONFIG?.DEBOUNCE_DELAY || 300;
 
-        this.buscarBtn.addEventListener('click', () => {
-            const valor = this.buscarInput.value.trim();
-            if (valor) {
-                this.ejecutarBusquedaRemota(valor);
-            } else {
-                this.librosFiltrados = [...this.libros];
-                this.paginaActual = 1;
-                this.renderizarLibros();
-            }
-        });
+        const ejecutarBusqueda = () => {
+            const q = this.buscarInput.value.trim();
+            const genero = this.inputGenero.value.trim();
+            const autor = this.inputAutor.value.trim();
+            this.buscador?.buscar({ q, genero, autor, prefijo: true });
+        };
 
-        this.limpiarBtn.addEventListener('click', () => {
-            this.limpiarBusqueda();
-        });
+        const debounceBusqueda = () => {
+            const q = this.buscarInput.value.trim();
+            const genero = this.inputGenero.value.trim();
+            const autor = this.inputAutor.value.trim();
+            this.buscador?.debounceBuscar({ q, genero, autor, prefijo: true }, debounceDelay);
+        };
+
+        const cargarRecorridoInicial = (force = false) => {
+            const tipo = this.selectRecorrido.value;
+            const genero = this.inputGenero.value.trim();
+            const autor = this.inputAutor.value.trim();
+            this.buscador?.cargarRecorrido({ tipo, genero, autor, force, qActual: this.buscarInput.value.trim() });
+        };
+
+        if(this.buscarInput){
+            this.buscarInput.addEventListener('input', () => {
+                if(this.buscarInput.value.trim().length >= MIN_QUERY){
+                    debounceBusqueda();
+                } else {
+                    cargarRecorridoInicial();
+                }
+            });
+        }
+        if(this.buscarBtn){
+            this.buscarBtn.addEventListener('click', () => {
+                if(this.buscarInput.value.trim().length >= MIN_QUERY){
+                    ejecutarBusqueda();
+                } else {
+                    cargarRecorridoInicial(true);
+                }
+            });
+        }
+        if(this.limpiarBtn){
+            this.limpiarBtn.addEventListener('click', () => {
+                this.limpiarBusqueda();
+                cargarRecorridoInicial(true);
+            });
+        }
+        if(this.selectRecorrido){
+            this.selectRecorrido.addEventListener('change', () => cargarRecorridoInicial(true));
+        }
+        if(this.inputGenero){
+            this.inputGenero.addEventListener('input', () => {
+                if(this.buscarInput.value.trim().length >= MIN_QUERY){
+                    debounceBusqueda();
+                } else {
+                    cargarRecorridoInicial();
+                }
+            });
+        }
+        if(this.inputAutor){
+            this.inputAutor.addEventListener('input', () => {
+                if(this.buscarInput.value.trim().length >= MIN_QUERY){
+                    debounceBusqueda();
+                } else {
+                    cargarRecorridoInicial();
+                }
+            });
+        }
+        if(this.btnRefrescar){
+            this.btnRefrescar.addEventListener('click', (e) => { e.preventDefault(); cargarRecorridoInicial(true); });
+        }
+
+        if (this.agregarDesdeBusquedaBtn) {
+            this.agregarDesdeBusquedaBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tituloRaw = (this.buscarInput.value || '').trim();
+                if (!tituloRaw) return;
+                const qp = new URLSearchParams({ titulo: tituloRaw });
+                window.location.href = `agregar.html?${qp.toString()}`;
+            });
+        }
 
         // Guardar cambios en modal de editar
         document.getElementById('guardar-cambios-btn').addEventListener('click', () => {
@@ -131,52 +195,28 @@ class EditarLibrosPage {
         }
     }
 
-    async ejecutarBusquedaRemota(termino) {
-        try {
-            this.mostrarLoading(true);
-            // Buscar con prefijo para mejorar velocidad/autocompletado
-            const resp = await LibroService.busquedaOptimizada(termino, { prefijo: true, limite: 300 });
-            if (resp.success) {
-                this.librosFiltrados = resp.data || [];
-                this.paginaActual = 1;
-                if (this.librosFiltrados.length === 0 && (resp.sugerencias && resp.sugerencias.length)) {
-                    UIUtils.mostrarNotificacion('info', 'Sin coincidencias exactas. Mostrando sugerencias similares.');
-                    this.librosFiltrados = resp.sugerencias;
-                }
-                this.renderizarLibros();
-            } else {
-                throw new Error(resp.mensaje || 'Error en búsqueda');
-            }
-        } catch (e) {
-            console.error('Error en búsqueda remota:', e);
-            UIUtils.mostrarNotificacion('error', `Error en búsqueda: ${e.message}`);
-        } finally {
-            this.mostrarLoading(false);
-        }
-    }
 
     limpiarBusqueda() {
-        this.buscarInput.value = '';
+        if(this.buscarInput) this.buscarInput.value = '';
+        if(this.inputGenero) this.inputGenero.value = '';
+        if(this.inputAutor) this.inputAutor.value = '';
         this.librosFiltrados = [...this.libros];
         this.paginaActual = 1;
         this.renderizarLibros();
-    }
-
-    limpiarBusqueda() {
-        this.buscarInput.value = '';
-        this.librosFiltrados = [...this.libros];
-        this.paginaActual = 1;
-        this.renderizarLibros();
+        this.actualizarBotonAgregar();
+        if(this.estadoBusqueda) this.estadoBusqueda.textContent = '';
     }
 
     renderizarLibros() {
         if (this.librosFiltrados.length === 0) {
             this.mostrarMensajeSinLibros();
+            this.actualizarBotonAgregar();
             return;
         }
-
         this.mostrarTabla(true);
-        
+
+        const totalPaginas = Math.max(1, Math.ceil(this.librosFiltrados.length / this.librosPorPagina));
+        if (this.paginaActual > totalPaginas) this.paginaActual = 1;
         const inicio = (this.paginaActual - 1) * this.librosPorPagina;
         const fin = inicio + this.librosPorPagina;
         const librosParaMostrar = this.librosFiltrados.slice(inicio, fin);
@@ -189,6 +229,7 @@ class EditarLibrosPage {
 
         // Agregar event listeners a los botones
         this.agregarEventListenersBotones();
+        this.actualizarBotonAgregar();
     }
 
     crearFilaLibro(libro) {
@@ -282,6 +323,51 @@ class EditarLibrosPage {
             document.getElementById('portada-actual-container').style.display = 'none';
         }
 
+        // Manejo PDF actual
+        const archivoActualContainer = document.getElementById('archivo-actual-container');
+        const sinArchivoContainer = document.getElementById('sin-archivo-container');
+        const verArchivoLink = document.getElementById('ver-archivo-link');
+        const descargarArchivoLink = document.getElementById('descargar-archivo-link');
+        const infoArchivo = document.getElementById('archivo-actual-info');
+        const eliminarCheckbox = document.getElementById('eliminar-archivo-checkbox');
+        if (eliminarCheckbox) eliminarCheckbox.checked = false;
+
+        if (libro.archivo) {
+            archivoActualContainer.style.display = 'block';
+            sinArchivoContainer.style.display = 'none';
+            infoArchivo.textContent = 'Hay un PDF asociado a este libro';
+            // Enlaces usando helpers centralizados
+            verArchivoLink.href = LibroService.pdfViewUrl(libro.id);
+            descargarArchivoLink.href = LibroService.pdfDownloadUrl(libro.id, { proxy: true });
+            // También agregar listeners explícitos (por si el navegador bloquea target)
+            verArchivoLink.onclick = (e) => { e.preventDefault(); LibroService.abrirPDF(libro.id); };
+            descargarArchivoLink.onclick = (e) => { e.preventDefault(); LibroService.descargarPDFProxy ? LibroService.descargarPDFProxy(libro.id) : LibroService.descargarPDF(libro.id); };
+        } else {
+            archivoActualContainer.style.display = 'none';
+            sinArchivoContainer.style.display = 'block';
+        }
+
+        // Configurar confirmación de eliminación PDF
+        if (eliminarCheckbox) {
+            eliminarCheckbox.onchange = (e) => {
+                if (e.target.checked) {
+                    const confirmado = window.confirm('¿Seguro que deseas eliminar el PDF actual? Esta acción no se puede deshacer si no subes otro antes de guardar.');
+                    if (!confirmado) {
+                        e.target.checked = false;
+                    }
+                }
+            };
+        }
+
+        const nuevoArchivoInput = document.getElementById('edit-archivo');
+        if (nuevoArchivoInput) {
+            nuevoArchivoInput.onchange = () => {
+                if (nuevoArchivoInput.files && nuevoArchivoInput.files.length > 0 && eliminarCheckbox && eliminarCheckbox.checked) {
+                    eliminarCheckbox.checked = false;
+                }
+            };
+        }
+
         this.editarModal.show();
     }
 
@@ -301,6 +387,8 @@ class EditarLibrosPage {
         try {
             const libroId = document.getElementById('edit-libro-id').value;
             const portadaFile = document.getElementById('edit-portada').files[0];
+            const archivoFile = document.getElementById('edit-archivo') ? document.getElementById('edit-archivo').files[0] : null;
+            const eliminarArchivo = document.getElementById('eliminar-archivo-checkbox')?.checked || false;
 
             // Recopilar datos del formulario
             let añoRaw = document.getElementById('edit-año').value.trim();
@@ -332,9 +420,9 @@ class EditarLibrosPage {
             const guardarBtn = document.getElementById('guardar-cambios-btn');
             UIUtils.mostrarLoading(guardarBtn, 'Guardando...');
 
-            // Crear FormData si hay archivo
+            // Crear FormData si hay archivo de portada, pdf o se quiere eliminar el existente
             let formData;
-            if (portadaFile) {
+            if (portadaFile || archivoFile || eliminarArchivo) {
                 formData = new FormData();
                 Object.keys(datosActualizados).forEach(key => {
                     const valor = datosActualizados[key] !== null ? datosActualizados[key] : '';
@@ -344,7 +432,9 @@ class EditarLibrosPage {
                         formData.append('anio_publicacion', valor.toString());
                     }
                 });
-                formData.append('portada', portadaFile);
+                if (portadaFile) formData.append('portada', portadaFile);
+                if (archivoFile) formData.append('archivo', archivoFile);
+                if (eliminarArchivo) formData.append('removeArchivo', 'true');
             } else {
                 // Añadir alias también en JSON si aplica
                 if (datosActualizados.año_publicacion !== null) {
@@ -399,12 +489,11 @@ class EditarLibrosPage {
 
     renderizarPaginacion() {
         const totalPaginas = Math.ceil(this.librosFiltrados.length / this.librosPorPagina);
-        
         if (totalPaginas <= 1) {
             this.paginationContainer.style.display = 'none';
+            if (this.paginationList) this.paginationList.innerHTML = '';
             return;
         }
-
         this.paginationContainer.style.display = 'block';
         
         let paginacionHTML = '';
@@ -489,7 +578,7 @@ class EditarLibrosPage {
         const tabla = document.querySelector('.table-responsive');
         tabla.style.display = mostrar ? 'block' : 'none';
         this.noLibrosMessage.style.display = 'none';
-        this.paginationContainer.style.display = mostrar ? 'block' : 'none';
+        // Quitar manejo directo de paginación aquí; se controla en renderizarPaginacion
     }
 
     mostrarMensajeSinLibros() {
@@ -497,9 +586,22 @@ class EditarLibrosPage {
         tabla.style.display = 'none';
         this.paginationContainer.style.display = 'none';
         this.noLibrosMessage.style.display = 'block';
+        this.actualizarBotonAgregar();
     }
 
-    /* ======================== AUTOCOMPLETADO COMPARTIDO ======================== */
+    actualizarBotonAgregar() {
+        if (!this.agregarDesdeBusquedaContainer) return;
+        const termino = (this.buscarInput?.value || '').trim();
+        // Mostrar si hay término de búsqueda y no hay resultados exactos (sin sugerencias mostradas como resultados reales)
+        const sinResultados = this.librosFiltrados.length === 0;
+        if (termino && sinResultados) {
+            this.agregarDesdeBusquedaTitulo.textContent = termino.length > 40 ? termino.slice(0,40)+'…' : termino;
+            this.agregarDesdeBusquedaContainer.style.display = 'block';
+        } else {
+            this.agregarDesdeBusquedaContainer.style.display = 'none';
+        }
+    }
+
     inicializarAutocompletadoCompartido() {
         if (!window.GeneroAutocomplete) {
             console.warn('[EditarLibros] GeneroAutocomplete util no cargado');
@@ -511,6 +613,35 @@ class EditarLibrosPage {
             select: this.editGeneroSelect,
             suggestionsContainer: this.editGeneroSuggestions
         });
+    }
+
+    inicializarBuscadorCompartido(){
+        if(!window.BuscadorLibros){
+            console.warn('[EditarLibros] BuscadorLibros util no cargado');
+            return;
+        }
+        // Creamos instancia que reutiliza los mismos endpoints
+        this.buscador = BuscadorLibros.crear({
+            obtenerRecorrido: (params)=> LibroService.obtenerRecorrido(params),
+            busquedaOptimizada: (q, opts)=> LibroService.busquedaOptimizada(q, opts),
+            minQuery: 2,
+            limiteRecorrido: 500,
+            limiteBusqueda: 300
+        });
+        this.buscador.onResultados = (lista, meta) => {
+            // En este contexto sólo nos interesa la lista resultante para filtrar tabla
+            if(Array.isArray(lista)){
+                this.librosFiltrados = lista;
+                this.paginaActual = 1;
+                this.renderizarLibros();
+            }
+            this.actualizarBotonAgregar();
+        };
+        this.buscador.onEstado = (msg)=> { if(this.estadoBusqueda) this.estadoBusqueda.textContent = msg || ''; };
+        this.buscador.onError = (m,e)=> console.error('[EditarLibros][Buscador]', m, e);
+        // Cargar recorrido inicial al iniciar buscador
+        const tipoInicial = this.selectRecorrido ? this.selectRecorrido.value : 'inorden';
+        this.buscador.cargarRecorrido({ tipo: tipoInicial, genero: this.inputGenero?.value.trim() || '', autor: this.inputAutor?.value.trim() || '', force: true });
     }
 }
 

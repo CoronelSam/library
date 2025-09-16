@@ -10,6 +10,7 @@ class AgregarLibroPage {
     init() {
         this.validarDependencias();
         this.obtenerElementos();
+        this.prefillTituloDesdeQuery();
         this.inicializarFormulario();
         this.inicializarAutocompletadoCompartido();
         // Log inicial (único) para diagnosticar carga de la página (mantener si se desea monitoreo básico)
@@ -266,6 +267,52 @@ class AgregarLibroPage {
             select: this.generoSelect,
             suggestionsContainer: this.suggestionsList
         });
+    }
+
+    // Prefill del título cuando se llega desde la búsqueda en editar (query param ?titulo=)
+    prefillTituloDesdeQuery() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            let titulo = params.get('titulo');
+            if (!titulo) return;
+            titulo = titulo.trim();
+            if (!titulo) return;
+            const input = document.getElementById('titulo');
+            if (input && !input.value) {
+                // Limitar longitud extrema para evitar inyecciones UI raras
+                if (titulo.length > 180) {
+                    titulo = titulo.slice(0, 180);
+                }
+                input.value = titulo;
+                // Disparar evento input por si hay validaciones en vivo
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                // Notificación discreta (si UIUtils soporta tipo info)
+                if (window.UIUtils && typeof UIUtils.mostrarNotificacion === 'function') {
+                    UIUtils.mostrarNotificacion('info', 'Título prellenado desde búsqueda');
+                }
+                // Mostrar badge visual
+                const badge = document.getElementById('titulo-prefill-badge');
+                if (badge) {
+                    badge.style.display = 'inline-block';
+                    // Opcional: ocultar después de unos segundos
+                    setTimeout(() => {
+                        if (badge) badge.style.opacity = '0.35';
+                    }, 6000);
+                }
+                // Foco en el siguiente campo para acelerar flujo
+                const autorInput = document.getElementById('autor');
+                autorInput?.focus();
+                // Eliminar query param para evitar repetir prefill en refrescos o al copiar URL
+                try {
+                    const cleanUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                } catch (e) {
+                    console.warn('[AgregarLibro] No se pudo limpiar la URL:', e);
+                }
+            }
+        } catch (e) {
+            console.warn('[AgregarLibro] Error al prellenar título desde query:', e);
+        }
     }
 }
 
