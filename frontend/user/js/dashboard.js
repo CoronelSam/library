@@ -160,8 +160,11 @@ function irADetalle(libroId) {
 // Funciones globales para manejar PDFs
 function verPDF(libroId) {
     try {
-        const url = `http://localhost:3001/api/libros/${libroId}/pdf`;
-        window.open(url, '_blank');
+        if (!window.librosDownload || !window.librosDownload.verPDF) {
+            console.warn('[Dashboard] librosDownload no disponible, fallback ver directo.');
+            return window.open(`http://localhost:3001/api/libros/${libroId}/pdf`, '_blank');
+        }
+        window.librosDownload.verPDF(libroId);
     } catch (error) {
         console.error('Error al abrir PDF:', error);
         alert('Error al abrir el archivo PDF');
@@ -170,44 +173,22 @@ function verPDF(libroId) {
 
 function descargarPDF(libroId) {
     try {
-        window.open(`http://localhost:3001/api/libros/${libroId}/download/proxy`, '_blank');
+        if (!window.librosDownload || !window.librosDownload.descargarPDF) {
+            console.warn('[Dashboard] librosDownload no disponible, fallback descarga proxy directa.');
+            return window.open(`http://localhost:3001/api/libros/${libroId}/download/proxy`, '_blank');
+        }
+        window.librosDownload.descargarPDF(libroId, { proxy: true, fallback: true });
     } catch (error) {
         console.error('Error al iniciar descarga (proxy):', error);
-        window.open(`http://localhost:3001/api/libros/${libroId}/download`, '_blank');
+        if (window.librosDownload && window.librosDownload.descargarPDF) {
+            window.librosDownload.descargarPDF(libroId, { proxy: false });
+        } else {
+            window.open(`http://localhost:3001/api/libros/${libroId}/download`, '_blank');
+        }
     }
 }
 
 // Inicializar dashboard cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new Dashboard();
-});
-
-const updateForm = document.getElementById('updateAccountForm');
-const updateMessage = document.getElementById('updateMessage');
-
-updateForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  
-  const username = document.getElementById('usernameInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  const confirmPassword = document.getElementById('confirmPasswordInput').value;
-  
-  if (!username || !password || !confirmPassword) {
-    updateMessage.textContent = "Todos los campos son obligatorios.";
-    return;
-  }
-  
-  if (password !== confirmPassword) {
-    updateMessage.textContent = "Las contraseñas no coinciden.";
-    return;
-  }
-
-  // Aquí puedes llamar a tu authService.js para actualizar los datos
-  // authService.updateAccount({username, password}).then(...).catch(...)
-
-  updateMessage.textContent = "";
-  alert("Usuario y contraseña actualizados correctamente (simulado).");
-  updateForm.reset();
-  const accountModal = bootstrap.Modal.getInstance(document.getElementById('accountModal'));
-  accountModal.hide();
 });

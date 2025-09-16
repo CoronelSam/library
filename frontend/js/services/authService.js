@@ -71,7 +71,6 @@ class AuthService {
                 body: JSON.stringify(datosUsuario)
             });
 
-            // Verificar si la respuesta es válida JSON
             let data;
             try {
                 data = await response.json();
@@ -238,9 +237,7 @@ class AuthService {
                                 <i class="bi bi-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
                             </div>
                             <h5 class="text-dark mb-3">Permisos Insuficientes</h5>
-                            <p class="text-muted mb-4">
-                                No tienes los permisos necesarios para acceder a esta página.
-                            </p>
+                            <p class="text-muted mb-4">No tienes los permisos necesarios para acceder a esta página.</p>
                         </div>
                         <div class="modal-footer border-0 justify-content-center">
                             <button type="button" class="btn btn-primary px-4" onclick="authService.redirectToRolePage()">
@@ -249,12 +246,56 @@ class AuthService {
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         const modal = new bootstrap.Modal(document.getElementById('accessDeniedModal'));
         modal.show();
+    }
+
+    // Obtener perfil actualizado desde backend
+    async getPerfil() {
+        if (!this.token) return { success: false, message: 'No autenticado' };
+        try {
+            const resp = await fetch(`${API_URL}/auth/perfil`, {
+                headers: { 'Authorization': `Bearer ${this.token}` }
+            });
+            const data = await resp.json();
+            if (resp.ok && data.success) {
+                this.usuario = data.data;
+                localStorage.setItem('usuario', JSON.stringify(this.usuario));
+            }
+            return data;
+        } catch (e) {
+            console.error('Error obteniendo perfil:', e);
+            return { success: false, message: 'Error de red' };
+        }
+    }
+
+    // Actualizar perfil (usuario/email/clave)
+    async actualizarPerfil(payload) {
+        if (!this.token) return { success: false, message: 'No autenticado' };
+        try {
+            const resp = await fetch(`${API_URL}/auth/perfil`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (resp.ok && data.success) {
+                if (data.data && data.data.usuario) {
+                    this.usuario = data.data.usuario;
+                    localStorage.setItem('usuario', JSON.stringify(this.usuario));
+                }
+            }
+            return data;
+        } catch (e) {
+            console.error('Error actualizando perfil:', e);
+            return { success: false, message: 'Error de red' };
+        }
     }
 }
 

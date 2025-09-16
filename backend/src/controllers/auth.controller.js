@@ -234,9 +234,76 @@ const verificarToken = async (req, res) => {
     }
 };
 
+// Actualizar perfil (usuario autenticado puede cambiar usuario, email y contraseña)
+const actualizarPerfil = async (req, res) => {
+    try {
+        const { usuario, email, clave } = req.body;
+
+        const usuarioActual = await Usuario.findByPk(req.usuario.id);
+        if (!usuarioActual) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+
+        // Validaciones manuales simples (se podrían mover a express-validator en rutas)
+        const updates = {};
+        if (usuario && usuario !== usuarioActual.usuario) {
+            if (!/^[a-zA-Z0-9]{5,50}$/.test(usuario)) {
+                return res.status(400).json({ success: false, message: 'Usuario inválido (5-50, alfanumérico)' });
+            }
+            // Verificar existencia
+            const existente = await Usuario.findOne({ where: { usuario } });
+            if (existente && existente.id !== usuarioActual.id) {
+                return res.status(400).json({ success: false, message: 'El usuario ya está en uso' });
+            }
+            updates.usuario = usuario;
+        }
+        if (email && email !== usuarioActual.email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ success: false, message: 'Email inválido' });
+            }
+            const emailExistente = await Usuario.findOne({ where: { email } });
+            if (emailExistente && emailExistente.id !== usuarioActual.id) {
+                return res.status(400).json({ success: false, message: 'El email ya está en uso' });
+            }
+            updates.email = email;
+        }
+        if (clave) {
+            if (clave.length < 8) {
+                return res.status(400).json({ success: false, message: 'La contraseña debe tener al menos 8 caracteres' });
+            }
+            updates.clave = clave; // Hook beforeUpdate se encargará de hashear
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ success: false, message: 'No hay cambios para actualizar' });
+        }
+
+        await usuarioActual.update(updates);
+
+        res.json({
+            success: true,
+            message: 'Perfil actualizado correctamente',
+            data: {
+                usuario: {
+                    id: usuarioActual.id,
+                    usuario: usuarioActual.usuario,
+                    email: usuarioActual.email,
+                    rol: usuarioActual.rol
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar perfil:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+};
+
 module.exports = {
     registro,
     login,
     perfil,
-    verificarToken
+    verificarToken,
+    actualizarPerfil
 };

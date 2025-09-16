@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { registro, login, verificarToken } = require('../controllers/auth.controller');
+const { registro, login, verificarToken, perfil, actualizarPerfil } = require('../controllers/auth.controller');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -25,7 +25,6 @@ const validacionesRegistro = [
         .withMessage('La contraseña debe tener al menos una mayúscula, una minúscula, un número y un carácter especial')
 ];
 
-// Validaciones para login
 const validacionesLogin = [
     body('usuario')
         .notEmpty()
@@ -40,5 +39,7 @@ const validacionesLogin = [
 router.post('/registro', validacionesRegistro, registro);
 router.post('/login', validacionesLogin, login);
 router.get('/verificar', auth, verificarToken);
+router.get('/perfil', auth, perfil);
+router.put('/perfil', auth, actualizarPerfil);
 
 module.exports = router;

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editar Cuenta</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background-color: #f0f2f5; }
+    .navbar { background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .navbar-brand { font-weight: 600; color: #343a40 !important; }
+    .nav-link { color: #555 !important; }
+    .nav-link.active { font-weight: 600; color: #0d6efd !important; }
+    .form-container { max-width: 520px; margin: 2rem auto; }
+    .card { border: none; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="dashboard.html"><i class="bi bi-book-half me-2"></i>Biblioteca</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-house-door-fill"></i> Inicio</a></li>
+        <li class="nav-item"><a class="nav-link" href="buscar.html"><i class="bi bi-search-heart-fill"></i> Buscar</a></li>
+        <li class="nav-item"><a class="nav-link" href="favoritos.html"><i class="bi bi-heart-fill"></i> Favoritos</a></li>
+        <li class="nav-item"><a class="nav-link" href="arbol.html"><i class="bi bi-diagram-3"></i> Árbol</a></li>
+        <li class="nav-item"><a class="nav-link active" href="editar-cuenta.html"><i class="bi bi-person-circle"></i> Perfil</a></li>
+        <li class="nav-item"><a class="nav-link text-danger" href="#" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Salir</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container form-container">
+  <div class="card">
+    <div class="card-body p-4">
+      <h3 class="fw-bold mb-3"><i class="bi bi-person-gear text-primary me-2"></i>Editar Cuenta</h3>
+      <p class="text-muted small">Modifica tus datos. Solo llena los campos que deseas cambiar.</p>
+      <form id="formEditarCuenta" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Usuario Actual</label>
+          <input id="usuarioActual" type="text" class="form-control" disabled>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nuevo Usuario</label>
+          <input id="nuevoUsuario" type="text" class="form-control" placeholder="Opcional">
+          <div class="form-text">Entre 5 y 50 caracteres alfanuméricos.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email Actual</label>
+          <input id="emailActual" type="email" class="form-control" disabled>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nuevo Email</label>
+          <input id="nuevoEmail" type="email" class="form-control" placeholder="Opcional">
+        </div>
+        <hr>
+        <div class="mb-3">
+          <label class="form-label">Nueva Contraseña</label>
+          <input id="nuevaClave" type="password" class="form-control" placeholder="Opcional">
+          <div class="form-text">Mínimo 8 caracteres.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirmar Contraseña</label>
+          <input id="confirmarClave" type="password" class="form-control" placeholder="Repite nueva contraseña">
+        </div>
+        <div id="mensajeEstado" class="mb-3 small"></div>
+        <button class="btn btn-primary w-100" type="submit"><i class="bi bi-save me-2"></i>Guardar Cambios</button>
+      </form>
+    </div>
+  </div>
+</div>
+<footer class="footer text-center">
+  <div class="container">
+    <p class="mb-0">Derechos reservados © 2025</p>
+  </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/config/api.js"></script>
+<script src="../js/services/authService.js"></script>
+<script src="js/editarCuenta.js"></script>
+</body>
+</html>
