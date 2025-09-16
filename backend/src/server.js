@@ -67,6 +67,7 @@ app.get('/health', async (req, res) => {
 app.use('/api/libros', require('./routes/libros'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/favoritos', require('./routes/favoritos'));
 
 app.use((error, req, res, next) => {
     console.error('❌ Error en la aplicación:', error);

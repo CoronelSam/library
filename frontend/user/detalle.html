@@ -68,7 +68,12 @@
         <img id="detallePortada" src="https://via.placeholder.com/400x600.png/E9ECEF/343A40?text=Portada" class="img-fluid portada" alt="Portada del Libro">
       </div>
       <div class="col-lg-8 d-flex flex-column">
-        <h2 id="detalleTitulo" class="book-title mb-2">Cargando...</h2>
+        <div class="d-flex align-items-start gap-3 mb-2 flex-wrap">
+          <h2 id="detalleTitulo" class="book-title mb-0 flex-grow-1">Cargando...</h2>
+          <button id="btnFavorito" class="btn btn-outline-danger d-flex align-items-center" type="button" title="Agregar a favoritos" style="min-width:52px;">
+            <i id="iconFavorito" class="bi bi-heart fs-4"></i>
+          </button>
+        </div>
         <p class="lead text-muted mb-4">por <span id="detalleAutor">Cargando autor...</span></p>
 
         <ul class="list-unstyled">
@@ -156,6 +161,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<script src="../js/services/libroService.js"></script>
+<script src="../js/services/favoritoService.js"></script>
 <script src="js/detalle.js"></script>
 </body>
 </html>

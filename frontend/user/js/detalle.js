@@ -3,6 +3,8 @@ class DetalleLibro {
     constructor() {
         this.libroId = null;
         this.apiUrl = API_CONFIG?.FULL_ENDPOINTS?.LIBROS || 'http://localhost:3001/api/libros';
+        this.btnFavorito = null;
+        this.iconFavorito = null;
         this.init();
     }
 
@@ -32,6 +34,7 @@ class DetalleLibro {
             
             if (data.success && data.data) {
                 this.mostrarDetalleLibro(data.data);
+                await this.initFavorito();
             } else {
                 throw new Error('Libro no encontrado');
             }
@@ -109,6 +112,47 @@ class DetalleLibro {
             // Mostrar mensaje de no disponible
             if (botonesPDF) botonesPDF.style.display = 'none';
             if (mensajeNoPDF) mensajeNoPDF.style.display = 'block';
+        }
+    }
+
+    async initFavorito(){
+        // Referencias
+        this.btnFavorito = document.getElementById('btnFavorito');
+        this.iconFavorito = document.getElementById('iconFavorito');
+        if(!this.btnFavorito || !window.FavoritoService || !authService?.isAuthenticated()) return;
+        try {
+            const estado = await FavoritoService.esFavorito(this.libroId);
+            const esFav = !!estado.favorito;
+            this.actualizarUIFavorito(esFav);
+        } catch(err){ console.warn('No se pudo obtener estado favorito inicial', err); }
+        this.btnFavorito.addEventListener('click', async ()=>{
+            if(!authService.isAuthenticated()) return;
+            this.btnFavorito.disabled = true;
+            try {
+                const resp = await FavoritoService.toggle(this.libroId);
+                this.actualizarUIFavorito(!!resp.favorito);
+            } catch(err){
+                console.error('Error toggle favorito:', err);
+            } finally {
+                this.btnFavorito.disabled = false;
+            }
+        });
+    }
+
+    actualizarUIFavorito(esFavorito){
+        if(!this.iconFavorito) return;
+        if(esFavorito){
+            this.iconFavorito.classList.remove('bi-heart');
+            this.iconFavorito.classList.add('bi-heart-fill');
+            this.btnFavorito?.classList.remove('btn-outline-danger');
+            this.btnFavorito?.classList.add('btn-danger');
+            this.btnFavorito.title = 'Quitar de favoritos';
+        } else {
+            this.iconFavorito.classList.add('bi-heart');
+            this.iconFavorito.classList.remove('bi-heart-fill');
+            this.btnFavorito?.classList.add('btn-outline-danger');
+            this.btnFavorito?.classList.remove('btn-danger');
+            this.btnFavorito.title = 'Agregar a favoritos';
         }
     }
 
