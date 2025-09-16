@@ -183,3 +183,33 @@ function descargarPDF(libroId) {
 document.addEventListener('DOMContentLoaded', () => {
     new Dashboard();
 });
+
+const updateForm = document.getElementById('updateAccountForm');
+const updateMessage = document.getElementById('updateMessage');
+
+updateForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  const username = document.getElementById('usernameInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const confirmPassword = document.getElementById('confirmPasswordInput').value;
+  
+  if (!username || !password || !confirmPassword) {
+    updateMessage.textContent = "Todos los campos son obligatorios.";
+    return;
+  }
+  
+  if (password !== confirmPassword) {
+    updateMessage.textContent = "Las contraseñas no coinciden.";
+    return;
+  }
+
+  // Aquí puedes llamar a tu authService.js para actualizar los datos
+  // authService.updateAccount({username, password}).then(...).catch(...)
+
+  updateMessage.textContent = "";
+  alert("Usuario y contraseña actualizados correctamente (simulado).");
+  updateForm.reset();
+  const accountModal = bootstrap.Modal.getInstance(document.getElementById('accountModal'));
+  accountModal.hide();
+});

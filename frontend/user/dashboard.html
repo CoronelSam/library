@@ -108,6 +108,18 @@
     </div>
 
     <div class="col-lg-4 col-md-6">
+  <div class="card card-custom">
+    <div class="card-body">
+      <div class="card-icon text-warning"><i class="bi bi-person-circle"></i></div>
+      <h5 class="card-title fw-bold">Cuenta</h5>
+      <p class="text-muted">Actualiza tu usuario y contraseña de forma segura.</p>
+      <button class="btn btn-outline-warning mt-3" data-bs-toggle="modal" data-bs-target="#accountModal">Actualizar Datos</button>
+    </div>
+  </div>
+</div>
+
+
+    <div class="col-lg-4 col-md-6">
         <div class="card card-custom">
             <div class="card-body">
                 <div class="card-icon text-info"><i class="bi bi-diagram-3"></i></div>
@@ -142,6 +154,37 @@
     <p class="mb-0">Derechos reservados © 2025</p>
   </div>
 </footer>
+
+<!-- Modal para actualizar usuario y contraseña -->
+<div class="modal fade" id="accountModal" tabindex="-1" aria-labelledby="accountModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="accountModalLabel">Actualizar Usuario y Contraseña</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="updateAccountForm">
+          <div class="mb-3">
+            <label for="usernameInput" class="form-label">Nuevo Usuario</label>
+            <input type="text" class="form-control" id="usernameInput" placeholder="Ingrese nuevo usuario">
+          </div>
+          <div class="mb-3">
+            <label for="passwordInput" class="form-label">Nueva Contraseña</label>
+            <input type="password" class="form-control" id="passwordInput" placeholder="Ingrese nueva contraseña">
+          </div>
+          <div class="mb-3">
+            <label for="confirmPasswordInput" class="form-label">Confirmar Contraseña</label>
+            <input type="password" class="form-control" id="confirmPasswordInput" placeholder="Confirme la contraseña">
+          </div>
+          <div id="updateMessage" class="text-danger mb-2"></div>
+          <button type="submit" class="btn btn-warning w-100">Actualizar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../js/config/api.js"></script>
