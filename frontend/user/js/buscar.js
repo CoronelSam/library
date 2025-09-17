@@ -1,5 +1,7 @@
 (function(){
   const inputBusqueda = document.getElementById('inputBusqueda');
+  const buscarBtn = document.getElementById('buscar-btn');
+  const limpiarBtn = document.getElementById('limpiar-btn');
   const selectRecorrido = document.getElementById('selectRecorrido');
   const inputGenero = document.getElementById('inputGenero');
   const inputAutor = document.getElementById('inputAutor');
@@ -17,19 +19,25 @@
   function renderLibros(libros){
     limpiarTabla();
     if(!libros || libros.length === 0){
-      if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Sin resultados</td></tr>';
+      if(tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Sin resultados</td></tr>';
       return;
     }
     const frag = document.createDocumentFragment();
     libros.forEach(l => {
       const tr = document.createElement('tr');
       
-      // CORRECCIÓN: Se añade la celda para el año de publicación
+      // Generar la imagen de portada (igual que en editar.js)
+      const portada = l.portada 
+        ? `<img src="${l.portada}" alt="Portada" class="img-thumbnail" style="width: 50px; height: 70px; object-fit: cover;">`
+        : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 70px; border-radius: 4px;"><i class="bi bi-book text-muted"></i></div>`;
+      
+      // Mostrar ISBN en lugar del año de publicación
       tr.innerHTML = `
+        <td>${portada}</td>
         <td>${escapeHtml(l.titulo)}</td>
         <td>${escapeHtml(l.autor || '')}</td>
         <td><span class="badge bg-primary rounded-pill">${escapeHtml(l.genero || '')}</span></td>
-        <td>${escapeHtml(l.año_publicacion) || '<em class="text-muted">N/A</em>'}</td>
+        <td>${escapeHtml(l.isbn) || '<em class="text-muted">N/A</em>'}</td>
         <td class="text-center"><a href="detalle.html?id=${l.id}" class="btn btn-sm btn-primary"><i class="bi bi-eye-fill me-1"></i>Ver</a></td>`;
       
       frag.appendChild(tr);
@@ -50,34 +58,100 @@
   buscador.onEstado = msg => setEstado(msg);
   buscador.onError = (msg, err) => {
     console.error('[BuscarUsuario]', msg, err);
-    if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Error al cargar los libros</td></tr>';
+    if(tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Error al cargar los libros</td></tr>';
   };
 
-  function cargarRecorridoInicial(){
+  function cargarRecorridoInicial(force = false){
     if(filaPlaceholder) filaPlaceholder.style.display = '';
     const tipo = selectRecorrido.value;
-    buscador.cargarRecorrido({ tipo, genero: inputGenero.value.trim(), autor: inputAutor.value.trim(), force: true });
+    const genero = inputGenero.value.trim();
+    const autor = inputAutor.value.trim();
+    buscador.cargarRecorrido({ tipo, genero, autor, force, qActual: inputBusqueda.value.trim() });
   }
 
   function ejecutarBusqueda(){
-    buscador.buscar({ q: inputBusqueda.value.trim(), genero: inputGenero.value.trim(), autor: inputAutor.value.trim(), prefijo: true });
+    const q = inputBusqueda.value.trim();
+    const genero = inputGenero.value.trim();
+    const autor = inputAutor.value.trim();
+    buscador.buscar({ q, genero, autor, prefijo: true });
+  }
+
+  function debounceBusqueda(){
+    const q = inputBusqueda.value.trim();
+    const genero = inputGenero.value.trim();
+    const autor = inputAutor.value.trim();
+    const debounceDelay = APP_CONSTANTS.UI_CONFIG?.DEBOUNCE_DELAY || 300;
+    buscador.debounceBuscar({ q, genero, autor, prefijo: true }, debounceDelay);
+  }
+
+  function limpiarBusqueda(){
+    if(inputBusqueda) inputBusqueda.value = '';
+    if(inputGenero) inputGenero.value = '';
+    if(inputAutor) inputAutor.value = '';
+    cargarRecorridoInicial(true);
   }
 
   function onInputBusqueda(){
     const q = inputBusqueda.value.trim();
     if (q.length >= MIN_QUERY) {
-      buscador.debounceBuscar({ q, genero: inputGenero.value.trim(), autor: inputAutor.value.trim(), prefijo: true }, APP_CONSTANTS.UI_CONFIG.DEBOUNCE_DELAY || 300);
+      debounceBusqueda();
     } else if (q.length === 0) {
       cargarRecorridoInicial();
     }
   }
 
   function initEventos(){
-    inputBusqueda.addEventListener('input', onInputBusqueda);
-    selectRecorrido.addEventListener('change', ()=> cargarRecorridoInicial());
-    inputGenero.addEventListener('input', onInputBusqueda);
-    inputAutor.addEventListener('input', onInputBusqueda);
-    if(btnRefrescar){ btnRefrescar.addEventListener('click', e=>{ e.preventDefault(); cargarRecorridoInicial(); }); }
+    // Event listeners para la búsqueda
+    if(inputBusqueda){
+      inputBusqueda.addEventListener('input', onInputBusqueda);
+    }
+    
+    if(buscarBtn){
+      buscarBtn.addEventListener('click', () => {
+        if(inputBusqueda.value.trim().length >= MIN_QUERY){
+          ejecutarBusqueda();
+        } else {
+          cargarRecorridoInicial(true);
+        }
+      });
+    }
+    
+    if(limpiarBtn){
+      limpiarBtn.addEventListener('click', () => {
+        limpiarBusqueda();
+      });
+    }
+    
+    if(selectRecorrido){
+      selectRecorrido.addEventListener('change', ()=> cargarRecorridoInicial(true));
+    }
+    
+    if(inputGenero){
+      inputGenero.addEventListener('input', () => {
+        if(inputBusqueda.value.trim().length >= MIN_QUERY){
+          debounceBusqueda();
+        } else {
+          cargarRecorridoInicial();
+        }
+      });
+    }
+    
+    if(inputAutor){
+      inputAutor.addEventListener('input', () => {
+        if(inputBusqueda.value.trim().length >= MIN_QUERY){
+          debounceBusqueda();
+        } else {
+          cargarRecorridoInicial();
+        }
+      });
+    }
+    
+    if(btnRefrescar){ 
+      btnRefrescar.addEventListener('click', e => { 
+        e.preventDefault(); 
+        cargarRecorridoInicial(true); 
+      }); 
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
