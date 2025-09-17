@@ -15,6 +15,25 @@
     .list-group-item {
         border-color: #e9ecef;
     }
+    /* Tree styles */
+    .tree-container { overflow-x: auto; }
+    .tree { display: inline-block; text-align: left; }
+    .tree ul { position: relative; padding-left: 1.25rem; margin: 0; }
+    .tree ul::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0.5rem; border-left: 1px solid #00050a; }
+    .tree li { list-style: none; position: relative; margin: 0; padding: 0.35rem 0 0.35rem 1.25rem; }
+    .tree li::before { content: ""; position: absolute; top: 0.95rem; left: 0; width: 0.75rem; border-top: 1px solid #00050a; }
+    .tree .node { display: inline-flex; gap: .5rem; align-items: center; background: #fff; border: 1px solid #00050a; border-radius: .5rem; padding: .35rem .55rem; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+    .tree .node .badge { font-size: .7rem; }
+    .tree .node a { text-decoration: none; color: #0d6efd; }
+    .tree .node .title { font-weight: 600; color: #343a40; }
+    .tree .muted { color: #6c757d; font-size: .85rem; }
+    .tree .node {
+    transition: all 0.3s ease;
+    cursor: pointer;}
+    .tree .node:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .sticky-toolbar { position: sticky; top: .75rem; z-index: 99; }
   </style>
 </head>
 <body>
@@ -29,8 +48,8 @@
       <div class="collapse navbar-collapse" id="navMenu">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-house-door"></i> Inicio</a></li>
-          <li class="nav-item"><a class="nav-link" href="favoritos.html"><i class="bi bi-heart"></i> Favoritos</a></li>
           <li class="nav-item"><a class="nav-link" href="buscar.html"><i class="bi bi-search"></i> Buscar Libro</a></li>
+          <li class="nav-item"><a class="nav-link" href="favoritos.html"><i class="bi bi-heart"></i> Favoritos</a></li>
           <li class="nav-item"><a class="nav-link active" href="arbol.html"><i class="bi bi-diagram-3"></i> Árbol Binario</a></li>
           <li class="nav-item"><a class="nav-link" href="editar-cuenta.html"><i class="bi bi-person-circle"></i> Perfil</a></li>
           <li class="nav-item"><a class="nav-link text-danger" href="#" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
@@ -41,35 +60,26 @@
 
 <div class="container py-5">
   <div class="text-center mb-5">
-    <h2 class="fw-bold display-6">Visualización del Árbol Binario</h2>
-    <p class="text-muted">Recorridos de la estructura de datos de la biblioteca.</p>
+    <h2 class="fw-bold display-6">Visualización de Árboles por Género</h2>
+    <p class="text-muted">Estructura de datos de la biblioteca organizada por géneros literarios.</p>
   </div>
 
   <div class="row g-4">
-      <div class="col-lg-4">
-          <div class="card h-100 border-0 shadow-sm">
-              <div class="card-header bg-primary text-white fw-bold"><i class="bi bi-arrow-down-up me-2"></i>Inorden</div>
-              <ul id="inorden" class="list-group list-group-flush">
-                <!-- Los elementos se inyectarán aquí con JS -->
-              </ul>
-          </div>
+    <div class="col-12">
+      <div id="estadoGeneral" class="text-center text-muted py-3">
+        <div class="spinner-border text-secondary spinner-border-sm me-2" role="status"></div>
+        Cargando árboles por género…
       </div>
-      <div class="col-lg-4">
-          <div class="card h-100 border-0 shadow-sm">
-              <div class="card-header bg-success text-white fw-bold"><i class="bi bi-arrow-down me-2"></i>Preorden</div>
-              <ul id="preorden" class="list-group list-group-flush">
-                <!-- Los elementos se inyectarán aquí con JS -->
-              </ul>
-          </div>
+      <div class="d-flex justify-content-center mb-3">
+        <button id="recargarArboles" class="btn btn-outline-primary" style="display: none;">
+          <i class="bi bi-arrow-clockwise me-2"></i>Recargar Árboles
+        </button>
       </div>
-      <div class="col-lg-4">
-          <div class="card h-100 border-0 shadow-sm">
-              <div class="card-header bg-warning text-dark fw-bold"><i class="bi bi-arrow-up me-2"></i>Postorden</div>
-              <ul id="postorden" class="list-group list-group-flush">
-                <!-- Los elementos se inyectarán aquí con JS -->
-              </ul>
-          </div>
-      </div>
+    </div>
+
+    <div id="arbolesContainer" class="row g-4">
+      <!-- Los arboles por género se generaran aqui -->
+    </div>
   </div>
 </div>
 <footer class="footer text-center">
@@ -81,31 +91,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../js/config/api.js"></script>
 <script src="../js/services/authService.js"></script>
-<script>
-// Verificar autenticación y configurar cerrar sesión
-document.addEventListener('DOMContentLoaded', function() {
-    if (!authService.isAuthenticated()) {
-        window.location.href = '../login.html';
-        return;
-    }
-    
-    const userRole = authService.getUserRole();
-    if (userRole === 'admin' || userRole === 'mod') {
-        window.location.href = '../admin/admin.html';
-        return;
-    }
-    
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Mostrar confirmación antes de cerrar sesión
-            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                authService.logout();
-            }
-        });
-    }
-});
-</script>
+<script src="../js/services/libroService.js"></script>
+<script src="js/arbol.js"></script>
 </body>
 </html>
