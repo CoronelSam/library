@@ -151,21 +151,23 @@ class ArbolLibros {
         return resultados;
     }
 
-    #buscarGeneralRecursivo(nodo, termino, resultados) {
-        if (nodo !== null) {
-            this.#buscarGeneralRecursivo(nodo.izquierdo, termino, resultados);
-            
-            const libro = nodo.libro;
-            if (libro.titulo.toLowerCase().includes(termino) ||
-                libro.autor.toLowerCase().includes(termino) ||
-                libro.genero.toLowerCase().includes(termino) ||
-                (libro.editorial && libro.editorial.toLowerCase().includes(termino))) {
-                resultados.push(libro);
-            }
-            
-            this.#buscarGeneralRecursivo(nodo.derecho, termino, resultados);
+    // arbol.js - MODIFICAR la función #buscarGeneralRecursivo:
+#buscarGeneralRecursivo(nodo, termino, resultados) {
+    if (nodo !== null) {
+        this.#buscarGeneralRecursivo(nodo.izquierdo, termino, resultados);
+        
+        const libro = nodo.libro;
+        if (libro.titulo.toLowerCase().includes(termino) ||
+            libro.autor.toLowerCase().includes(termino) ||
+            libro.genero.toLowerCase().includes(termino) ||
+            (libro.isbn && libro.isbn.toLowerCase().includes(termino)) || // Búsqueda por ISBN
+            (libro.editorial && libro.editorial.toLowerCase().includes(termino))) {
+            resultados.push(libro);
         }
+        
+        this.#buscarGeneralRecursivo(nodo.derecho, termino, resultados);
     }
+}
 
     // Altura del árbol
     altura() {

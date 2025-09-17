@@ -1,3 +1,4 @@
+--- START OF FILE views/buscar.html ---
 <!doctype html>
 <html lang="es">
 <head>
@@ -32,7 +33,7 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
-      <a class="navbar-brand" href="dashboard.html"><i class="bi bi-book-half me-2"></i>SELH Virtual Library</a>
+      <a class="navbar-brand" href="dashboard.html"><i class="bi bi-book-half me-2"></i>Biblioteca Digital</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -93,13 +94,14 @@
           <th>Título</th>
           <th>Autor</th>
           <th>Género</th>
+          <!-- CORRECCIÓN: Se añade la cabecera que faltaba -->
           <th>Año</th>
           <th class="text-center">Acciones</th>
         </tr>
       </thead>
       <tbody id="tbodyResultados">
         <tr id="filaPlaceholder">
-          <td colspan="6" class="text-center text-muted py-4">Cargando recorrido inicial...</td>
+          <td colspan="5" class="text-center text-muted py-4">Cargando recorrido inicial...</td>
         </tr>
       </tbody>
     </table>
@@ -132,7 +134,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // Mostrar confirmación antes de cerrar sesión
             if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
                 authService.logout();
             }

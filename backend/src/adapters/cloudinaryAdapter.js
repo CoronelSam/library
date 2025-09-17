@@ -58,6 +58,56 @@ class CloudinaryAdapter {
     }
 
     /**
+ * Subir imagen adicional a Cloudinary
+ * @param {Object} archivo - Archivo de imagen
+ * @param {Number} libroId - ID del libro
+ * @param {Number} index - Índice de la imagen
+ * @returns {Object} - URL y datos de la imagen subida
+ */
+async subirImagenAdicional(archivo, libroId, index) {
+    try {
+        if (!archivo) {
+            throw new Error('No se proporcionó ningún archivo');
+        }
+
+        if (!this.esImagenValida(archivo.mimetype)) {
+            throw new Error('El archivo debe ser una imagen (JPG, PNG, WebP)');
+        }
+
+        const options = {
+            folder: 'biblioteca/imagenes_adicionales',
+            public_id: `libro_${libroId}_extra_${index}_${Date.now()}`,
+            format: 'jpg',
+            quality: 'auto:good',
+            width: 800,
+            height: 1200,
+            crop: 'fill',
+            gravity: 'center',
+            overwrite: false, // No sobrescribir para mantener histórico
+            invalidate: true
+        };
+
+        const resultado = await this.cloudinary.uploader.upload(archivo.path, options);
+        await this.limpiarArchivoTemporal(archivo.path);
+
+        return {
+            url: resultado.secure_url,
+            publicId: resultado.public_id,
+            width: resultado.width,
+            height: resultado.height,
+            format: resultado.format,
+            bytes: resultado.bytes
+        };
+
+    } catch (error) {
+        if (archivo && archivo.path) {
+            await this.limpiarArchivoTemporal(archivo.path);
+        }
+        throw new Error(`Error al subir imagen adicional: ${error.message}`);
+    }
+}
+
+    /**
      * Subir archivo PDF del libro
      * @param {Object} archivo - Archivo PDF
      * @param {Number} libroId - ID del libro

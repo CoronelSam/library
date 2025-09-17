@@ -65,6 +65,22 @@
     .genre-suggestion:last-child {
       border-bottom: none;
     }
+    /* Estilos para la galería de edición */
+    .thumbnail-container {
+        position: relative;
+    }
+    .thumbnail-delete-btn {
+        position: absolute;
+        top: -5px;
+        right: 5px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -114,7 +130,7 @@
     <div class="card-body p-4">
       <div class="row g-3 align-items-end">
         <div class="col-md-5">
-          <label class="form-label fw-semibold">Buscar (título / autor / género)</label>
+          <label class="form-label fw-semibold">Buscar (título / autor / género / ISBN)</label>
           <input id="buscar-input" type="text" class="form-control" placeholder="Escribe al menos 2 caracteres...">
         </div>
         <div class="col-md-3">
@@ -168,8 +184,7 @@
           <th scope="col">Título</th>
           <th scope="col">Autor</th>
           <th scope="col">Género</th>
-          <th scope="col">Editorial</th>
-          <th scope="col">Año</th>
+          <th scope="col">ISBN</th>
           <th scope="col">Acciones</th>
         </tr>
       </thead>
@@ -225,51 +240,7 @@
               <label class="form-label">Género</label>
               <select class="form-select" id="edit-genero-select">
                 <option selected disabled>Seleccionar género...</option>
-                <option>Aventura</option>
-                <option>Biografía</option>
-                <option>Ciencia</option>
-                <option>Ciencia Ficción</option>
-                <option>Clásicos</option>
-                <option>Comedia</option>
-                <option>Cómics</option>
-                <option>Crimen</option>
-                <option>Drama</option>
-                <option>Economía</option>
-                <option>Ensayo</option>
-                <option>Fantasía</option>
-                <option>Ficción</option>
-                <option>Filosofía</option>
-                <option>Historia</option>
-                <option>Horror</option>
-                <option>Humor</option>
-                <option>Infantil</option>
-                <option>Juvenil</option>
-                <option>Literatura</option>
-                <option>Matemáticas</option>
-                <option>Medicina</option>
-                <option>Misterio</option>
-                <option>Música</option>
-                <option>Negocios</option>
-                <option>No Ficción</option>
-                <option>Novela</option>
-                <option>Novela Gráfica</option>
-                <option>Novela Histórica</option>
-                <option>Novela Negra</option>
-                <option>Novela Romántica</option>
-                <option>Poesía</option>
-                <option>Política</option>
-                <option>Psicología</option>
-                <option>Religión</option>
-                <option>Romance</option>
-                <option>Salud</option>
-                <option>Suspenso</option>
-                <option>Teatro</option>
-                <option>Tecnología</option>
-                <option>Terror</option>
-                <option>Thriller</option>
-                <option>Viajes</option>
-                <option>Western</option>
-                <option>Otro</option>
+                <option>Aventura</option><option>Biografía</option><option>Ciencia</option><option>Ciencia Ficción</option><option>Clásicos</option><option>Comedia</option><option>Cómics</option><option>Crimen</option><option>Drama</option><option>Economía</option><option>Ensayo</option><option>Fantasía</option><option>Ficción</option><option>Filosofía</option><option>Historia</option><option>Horror</option><option>Humor</option><option>Infantil</option><option>Juvenil</option><option>Literatura</option><option>Matemáticas</option><option>Medicina</option><option>Misterio</option><option>Música</option><option>Negocios</option><option>No Ficción</option><option>Novela</option><option>Novela Gráfica</option><option>Novela Histórica</option><option>Novela Negra</option><option>Novela Romántica</option><option>Poesía</option><option>Política</option><option>Psicología</option><option>Religión</option><option>Romance</option><option>Salud</option><option>Suspenso</option><option>Teatro</option><option>Tecnología</option><option>Terror</option><option>Thriller</option><option>Viajes</option><option>Western</option><option>Otro</option>
               </select>
               <div class="mt-2">
                 <label class="form-label text-muted">O escribe directamente:</label>
@@ -288,11 +259,27 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="edit-año" class="form-label">Año de Publicación</label>
-              <input type="number" class="form-control" id="edit-año" min="1" max="2025">
+              <input type="number" class="form-control" id="edit-año" name="año_publicacion" min="1" max="2025">
             </div>
+            <div class="col-md-6 mb-3">
+              <label for="edit-isbn" class="form-label">ISBN</label>
+              <input type="text" class="form-control" id="edit-isbn" 
+                     placeholder="Código ISBN" pattern="[0-9\-]{10,20}">
+            </div>
+          </div>
+
+          <div class="row">
             <div class="col-md-6 mb-3">
               <label for="edit-portada" class="form-label">Nueva Portada (opcional)</label>
               <input type="file" class="form-control" id="edit-portada" accept="image/*">
+            </div>
+            <!-- Novedad: Input para agregar MÁS imágenes adicionales -->
+            <div class="col-md-6 mb-3">
+              <label for="edit-imagenes-adicionales" class="form-label">Añadir Imágenes Adicionales (opcional)</label>
+              <input type="file" class="form-control" id="edit-imagenes-adicionales" accept="image/*" multiple>
+              <div class="form-text">
+                <strong class="text-warning">Deben ser imágenes verticales.</strong>
+              </div>
             </div>
           </div>
 
@@ -336,6 +323,13 @@
               <img id="portada-actual" src="" alt="Portada actual" class="img-thumbnail" style="max-width: 150px;">
             </div>
           </div>
+
+          <!-- Novedad: Galería de imágenes adicionales existentes -->
+          <div id="galeria-imagenes-container" class="mb-3" style="display: none;">
+            <label class="form-label">Imágenes Adicionales Actuales</label>
+            <div id="galeria-imagenes" class="row g-2"></div>
+          </div>
+
         </form>
       </div>
       <div class="modal-footer">
@@ -388,11 +382,6 @@
 <script src="../js/utils/generoAutocomplete.js"></script>
 <script src="js/adminAuth.js"></script>
 <script src="../js/utils/buscadorLibros.js"></script>
-<script type="module" src="js/editar/constants.js"></script>
-<script type="module" src="js/editar/domRefs.js"></script>
-<script type="module" src="js/editar/render.js"></script>
-<script type="module" src="js/editar/uiLogic.js"></script>
-<script type="module" src="js/editar/buscadorHandler.js"></script>
-<script type="module" src="js/editar/editarPage.js"></script>
+<script src="js/editar.js"></script>
 </body>
 </html>

@@ -168,6 +168,13 @@
                                 <input type="number" id="año_publicacion" class="form-control form-control-lg" 
                                        placeholder="Ej: 2023" min="1" max="2025">
                             </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">ISBN</label>
+                                <input type="text" id="isbn" class="form-control form-control-lg" 
+                                       placeholder="Ej: 978-3-16-148410-0" autocomplete="off" 
+                                       pattern="[0-9\-]{10,20}" title="Formato de ISBN válido (10-20 dígitos y guiones)">
+                                <div class="form-text">Opcional: Código ISBN del libro</div>
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-semibold">Descripción</label>
@@ -178,6 +185,15 @@
                             <label class="form-label fw-semibold">Portada del Libro</label>
                             <input type="file" id="portada" class="form-control form-control-lg" accept="image/*">
                             <div class="form-text">Opcional: Formatos permitidos: JPG, PNG, WebP</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Imágenes Adicionales</label>
+                            <input type="file" id="imagenes_adicionales" class="form-control form-control-lg" 
+                                   accept="image/*" multiple>
+                            <div class="form-text">
+                                Opcional: Hasta 8 imágenes adicionales (contraportada, interiores, etc.). 
+                                <strong class="text-warning">Deben ser imágenes verticales.</strong>
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-semibold">PDF del Libro</label>
@@ -217,6 +233,7 @@
 <script src="../js/utils/generoAutocomplete.js"></script>
 <script src="js/adminAuth.js"></script>
 <script src="js/agregar.js"></script>
+<script src="../js/utils/galeria.js"></script>
 
 </body>
 </html>

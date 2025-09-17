@@ -138,41 +138,37 @@ class LibroService {
         }
     }
 
-    static async actualizar(id, datosLibro) {
+    static async actualizar(libroId, formData) {
         try {
-            const options = {
-                method: 'PUT'
-            };
-
-            // Si es FormData (tiene archivos), no agregar Content-Type
-            if (datosLibro instanceof FormData) {
-                if (API_CONFIG?.REQUEST_CONFIG?.headers) {
-                    const headers = { ...API_CONFIG.REQUEST_CONFIG.headers };
-                    delete headers['Content-Type'];
-                    delete headers['content-type'];
-                    if (Object.keys(headers).length > 0) {
-                        options.headers = headers;
-                    }
-                }
-                options.body = datosLibro;
-            } else {
-                // Si es JSON normal
-                options.headers = API_CONFIG.REQUEST_CONFIG.headers;
-                options.body = JSON.stringify(datosLibro);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                UIUtils.mostrarNotificacion('error', 'No estás autenticado. Por favor, inicia sesión.');
+                return { success: false, mensaje: 'Token no encontrado' };
             }
 
-            const response = await fetch(`${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${id}`, options);
+            // fetch es la forma correcta de enviar FormData
+            const response = await fetch(`${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}`, {
+                method: 'PUT',
+                headers: {
+                    // ¡Importante! NO establezcas 'Content-Type' aquí.
+                    // El navegador lo hará automáticamente con el 'boundary' correcto para FormData.
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData // Envía el objeto FormData directamente
+            });
 
-            const resultado = await response.json();
+            const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(resultado.mensaje || 'Error al actualizar el libro');
+                // Si la respuesta del servidor es un error (4xx, 5xx), lanza una excepción
+                throw new Error(data.mensaje || `Error del servidor: ${response.status}`);
             }
 
-            return resultado;
+            return data;
         } catch (error) {
-            console.error('Error en LibroService.actualizar:', error);
-            throw error;
+            console.error('Error en LibroService.actualizar (frontend):', error);
+            // Devuelve un objeto de error consistente para que el `catch` en editar.js pueda manejarlo
+            return { success: false, mensaje: error.message };
         }
     }
 

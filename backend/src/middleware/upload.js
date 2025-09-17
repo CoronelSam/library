@@ -21,9 +21,9 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
     try {
-
-        if (file.fieldname === 'portada') {
-            // Validar imágenes para portada
+        // MODIFICACIÓN CLAVE AQUÍ: Permitir 'imagenes_adicionales' como campo de imagen válido.
+        if (file.fieldname === 'portada' || file.fieldname === 'imagenes_adicionales') {
+            // Validar imágenes para portada e imágenes adicionales
             if (appConfig.uploads.allowedImageTypes.includes(file.mimetype)) {
                 cb(null, true);
             } else {
@@ -50,15 +50,70 @@ const upload = multer({
     fileFilter: fileFilter,
     limits: {
         fileSize: 50 * 1024 * 1024, // 50MB
-        files: 2 // Máximo 2 archivos (portada + PDF)
+        files: 10// Máximo 10 archivos (portada + PDF + 8 imágenes adicionales)
     }
 });
 
 // Middleware para manejar múltiples archivos específicos
 const uploadLibroFiles = upload.fields([
     { name: 'portada', maxCount: 1 },
+    { name: 'imagenes_adicionales', maxCount: 8 }, // Hasta 8 imágenes adicionales
     { name: 'archivo', maxCount: 1 }
 ]);
+
+const verificarOrientacionImagen = async (filePath) => {
+    try {
+        const sizeOf = require('image-size');
+        const dimensions = sizeOf(filePath);
+        return dimensions.height >= dimensions.width; // True si es vertical
+    } catch (error) {
+        console.warn('No se pudo verificar orientación de imagen:', error);
+        return true; // Asumir que es válida si no se puede verificar
+    }
+};
+
+// Middleware para validar orientación de imágenes
+const validarOrientacionImagenes = async (req, res, next) => {
+    try {
+        if (req.files && req.files.portada) {
+            for (const file of req.files.portada) {
+                const esVertical = await verificarOrientacionImagen(file.path);
+                if (!esVertical) {
+                    cleanupFiles(req.files);
+                    return res.status(400).json({
+                        success: false,
+                        mensaje: 'La imagen de portada debe ser vertical',
+                        error: 'IMAGE_NOT_VERTICAL'
+                    });
+                }
+            }
+        }
+        
+        if (req.files && req.files.imagenes_adicionales) {
+            for (const file of req.files.imagenes_adicionales) {
+                const esVertical = await verificarOrientacionImagen(file.path);
+                if (!esVertical) {
+                    cleanupFiles(req.files);
+                    return res.status(400).json({
+                        success: false,
+                        mensaje: 'Todas las imágenes adicionales deben ser verticales',
+                        error: 'IMAGE_NOT_VERTICAL'
+                    });
+                }
+            }
+        }
+        
+        next();
+    } catch (error) {
+        console.error('Error al validar orientación de imágenes:', error);
+        if (req.files) cleanupFiles(req.files);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al validar imágenes',
+            error: 'ORIENTATION_VALIDATION_ERROR'
+        });
+    }
+};
 
 // Middleware personalizado para manejo de errores de multer
 const handleMulterError = (error, req, res, next) => {
@@ -75,13 +130,13 @@ const handleMulterError = (error, req, res, next) => {
             case 'LIMIT_FILE_COUNT':
                 return res.status(400).json({
                     success: false,
-                    mensaje: 'Demasiados archivos. Máximo 2 archivos permitidos.',
+                    mensaje: 'Demasiados archivos. Máximo 10 archivos permitidos.',
                     error: 'TOO_MANY_FILES'
                 });
             case 'LIMIT_UNEXPECTED_FILE':
                 return res.status(400).json({
                     success: false,
-                    mensaje: 'Campo de archivo inesperado. Solo se permiten "portada" y "archivo".',
+                    mensaje: 'Campo de archivo inesperado. Solo se permiten "portada", "archivo" y "imagenes_adicionales".',
                     error: 'UNEXPECTED_FIELD'
                 });
             default:
@@ -119,21 +174,13 @@ const cleanupTempFiles = (req, res, next) => {
 
 const cleanupFiles = (files) => {
     try {
-        if (files.portada) {
-            files.portada.forEach(file => {
+        Object.keys(files).forEach(fieldName => {
+            files[fieldName].forEach(file => {
                 fs.unlink(file.path, (err) => {
                     if (err) console.warn(`⚠️ No se pudo eliminar archivo temporal: ${file.path}`);
                 });
             });
-        }
-        
-        if (files.archivo) {
-            files.archivo.forEach(file => {
-                fs.unlink(file.path, (err) => {
-                    if (err) console.warn(`⚠️ No se pudo eliminar archivo temporal: ${file.path}`);
-                });
-            });
-        }
+        });
     } catch (error) {
         console.warn('⚠️ Error al limpiar archivos temporales:', error);
     }
@@ -184,5 +231,6 @@ module.exports = {
     handleMulterError,
     cleanupTempFiles,
     validateUploadedFiles,
-    cleanupFiles
+    cleanupFiles,
+    validarOrientacionImagenes
 };

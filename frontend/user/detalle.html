@@ -65,7 +65,23 @@
   <div class="card border-0 shadow-sm p-4 rounded-4">
     <div class="row g-5">
       <div class="col-lg-4 text-center">
-        <img id="detallePortada" src="https://via.placeholder.com/400x600.png/E9ECEF/343A40?text=Portada" class="img-fluid portada" alt="Portada del Libro">
+        <div id="libroGaleria" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-indicators" id="galeria-indicators">
+            </div>
+            <div class="carousel-inner" id="galeria-inner">
+                <div class="carousel-item active">
+                    <img src="https://via.placeholder.com/400x600.png/E9ECEF/343A40?text=Portada" class="d-block w-100 portada" alt="Portada del Libro">
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#libroGaleria" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#libroGaleria" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
       </div>
       <div class="col-lg-8 d-flex flex-column">
         <div class="d-flex align-items-start gap-3 mb-2 flex-wrap">
@@ -80,6 +96,8 @@
           <li class="mb-3"><span class="info-label me-2"><i class="bi bi-tag-fill text-primary"></i> Género:</span> <span id="detalleGenero" class="badge bg-primary-subtle text-primary-emphasis rounded-pill p-2">Cargando...</span></li>
           <li class="mb-3"><span class="info-label me-2"><i class="bi bi-calendar-event-fill text-danger"></i> Año de publicación:</span> <span id="detalleAnio">Cargando...</span></li>
           <li class="mb-3"><span class="info-label me-2"><i class="bi bi-building text-info"></i> Editorial:</span> <span id="detalleEditorial">Cargando...</span></li>
+          <!-- Novedad: Contenedor para mostrar el ISBN. Inicialmente oculto. -->
+          <li class="mb-3" id="detalleISBN-container" style="display: none;"><span class="info-label me-2"><i class="bi bi-upc-scan text-secondary"></i> ISBN:</span> <span id="detalleISBN">Cargando...</span></li>
         </ul>
 
         <!-- Descripción -->
