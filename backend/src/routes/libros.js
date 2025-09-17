@@ -5,7 +5,8 @@ const {
     uploadLibroFiles, 
     handleMulterError, 
     cleanupTempFiles, 
-    validateUploadedFiles 
+    validateUploadedFiles, 
+    validarOrientacionImagenes
 } = require('../middleware/upload');
 
 // Rutas sin archivos
@@ -26,7 +27,8 @@ router.get('/:id/download/proxy', libroController.descargarPDFProxy);
 router.post('/', 
     cleanupTempFiles,           
     uploadLibroFiles,          
-    handleMulterError,          
+    handleMulterError,     
+    validarOrientacionImagenes,     
     validateUploadedFiles,      
     libroController.crear  
 );
@@ -35,6 +37,7 @@ router.put('/:id',
     cleanupTempFiles,
     uploadLibroFiles,
     handleMulterError,
+    validarOrientacionImagenes,
     validateUploadedFiles,
     libroController.actualizar
 );

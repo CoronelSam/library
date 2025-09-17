@@ -61,10 +61,35 @@ const Libro = sequelize.define('Libro', {
             }
         }
     },
+    isbn: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+        unique: {
+            msg: 'Este ISBN ya está registrado'
+        },
+        validate: {
+            len: {
+                args: [10, 20],
+                msg: 'El ISBN debe tener entre 10 y 20 caracteres'
+            }
+        }
+    },
     portada: {
         type: DataTypes.TEXT,
         allowNull: true,
         comment: 'URL o path de la imagen de portada'
+    },
+    imagenes_adicionales: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: 'URLs de imágenes adicionales en formato JSON',
+        get() {
+            const rawValue = this.getDataValue('imagenes_adicionales');
+            return rawValue ? JSON.parse(rawValue) : [];
+        },
+        set(value) {
+            this.setDataValue('imagenes_adicionales', value ? JSON.stringify(value) : null);
+        }
     },
     archivo: {
         type: DataTypes.TEXT,
@@ -93,22 +118,36 @@ const Libro = sequelize.define('Libro', {
         {
             name: 'idx_titulo_autor',
             fields: ['titulo', 'autor']
+        },
+        {
+            name: 'idx_isbn',
+            fields: ['isbn']
         }
     ],
     hooks: {
-        beforeCreate: (libro) => {
-            // Normalizar datos antes de crear
-            if (libro.titulo) libro.titulo = libro.titulo.trim();
-            if (libro.autor) libro.autor = libro.autor.trim();
-            if (libro.genero) libro.genero = libro.genero.trim();
-            if (libro.editorial) libro.editorial = libro.editorial.trim();
-        },
-        beforeUpdate: (libro) => {
-            // Normalizar datos antes de actualizar
-            if (libro.titulo) libro.titulo = libro.titulo.trim();
-            if (libro.autor) libro.autor = libro.autor.trim();
-            if (libro.genero) libro.genero = libro.genero.trim();
-            if (libro.editorial) libro.editorial = libro.editorial.trim();
+        // REEMPLAZA TU BLOQUE 'hooks' CON ESTE
+        beforeSave: (libro, options) => {
+            const trimIfString = (value) => (typeof value === 'string' ? value.trim() : value);
+
+            // Limpia los campos de texto
+            libro.titulo = trimIfString(libro.titulo);
+            libro.autor = trimIfString(libro.autor);
+            libro.genero = trimIfString(libro.genero);
+            
+            // --- ¡AQUÍ ESTÁ LA MAGIA! ---
+            // Aseguramos que los campos opcionales que llegan vacíos se guarden como NULL
+            
+            // Si editorial es una cadena, la trimea. Si es vacía, la convierte en null.
+            libro.editorial = trimIfString(libro.editorial) || null;
+            
+            // Si isbn es una cadena, la trimea. Si es vacía, la convierte en null.
+            libro.isbn = trimIfString(libro.isbn) || null;
+            
+            // Si año_publicacion es cualquier cosa que no sea un número válido (incluyendo ''),
+            // lo convertimos a null.
+            if (libro.año_publicacion === '' || isNaN(parseInt(libro.año_publicacion, 10))) {
+                libro.año_publicacion = null;
+            }
         }
     }
 });
@@ -148,4 +187,11 @@ Libro.buscarPorGenero = async function(genero) {
     });
 };
 
+Libro.buscarPorISBN = async function(isbn) {
+    return await this.findOne({
+        where: {
+            isbn: isbn
+        }
+    });
+};
 module.exports = Libro;

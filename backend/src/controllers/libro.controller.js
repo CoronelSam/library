@@ -2,285 +2,193 @@ const { libroService } = require('../services/LibroService');
 const { cloudinaryAdapter } = require('../adapters/cloudinaryAdapter');
 const { cleanupFiles } = require('../middleware/upload');
 const Libro = require('../models/Libro');
+const { Op } = require('sequelize');
 
+// Esta función sigue siendo útil para la CREACIÓN de libros.
 function normalizarDatosLibro(datos) {
     return {
         ...datos,
-        // Convertir cadenas vacías a null para campos numéricos
         año_publicacion: datos.año_publicacion && datos.año_publicacion.toString().trim() !== '' 
             ? parseInt(datos.año_publicacion) 
             : null,
-        // Asegurar que campos de texto vacíos sean null en lugar de cadenas vacías
         editorial: datos.editorial && datos.editorial.trim() !== '' ? datos.editorial.trim() : null,
         descripcion: datos.descripcion && datos.descripcion.trim() !== '' ? datos.descripcion.trim() : null
     };
 }
 
+async function subirImagenesAdicionales(archivos, libroId) {
+    if (!archivos || !archivos.imagenes_adicionales) return [];
+    
+    const imagenesUrls = [];
+    for (let i = 0; i < archivos.imagenes_adicionales.length; i++) {
+        try {
+            const file = archivos.imagenes_adicionales[i];
+            const resultado = await cloudinaryAdapter.subirImagenAdicional(file, libroId, i);
+            imagenesUrls.push(resultado.url);
+        } catch (error) {
+            console.error('Error al subir imagen adicional:', error);
+        }
+    }
+    return imagenesUrls;
+}
+
+
 class LibroController {
-    // Obtener todos los libros
+    // Los métodos obtenerTodos, obtenerPorId, y crear no necesitan cambios.
     async obtenerTodos(req, res) {
         try {
             const { ordenar = 'titulo' } = req.query;
-            
-            let libros;
-            if (ordenar === 'titulo') {
-                // Aprovechar el arbol binario para orden por título
-                libros = libroService.obtenerTodosLosLibros();
-            } else {
-                // Para otros ordenamientos, usar la base de datos
-                libros = await Libro.findAll({
-                    order: [[ordenar, 'ASC']]
-                });
-            }
+            let libros = (ordenar === 'titulo')
+                ? libroService.obtenerTodosLosLibros()
+                : await Libro.findAll({ order: [[ordenar, 'ASC']] });
 
-            res.json({
-                success: true,
-                data: libros,
-                total: libros.length,
-                mensaje: 'Libros obtenidos correctamente'
-            });
+            res.json({ success: true, data: libros, total: libros.length, mensaje: 'Libros obtenidos correctamente' });
         } catch (error) {
             console.error('Error al obtener libros:', error);
-            res.status(500).json({
-                success: false,
-                error: error.message,
-                mensaje: 'Error al obtener los libros'
-            });
+            res.status(500).json({ success: false, error: error.message, mensaje: 'Error al obtener los libros' });
         }
     }
 
     async obtenerPorId(req, res) {
         try {
             const { id } = req.params;
-            
-            // Primero intentar desde el árbol (más rápido)
-            let libro = libroService.buscarPorId(parseInt(id));
-            
-            // Si no se encuentra en el árbol, buscar en BD
-            if (!libro) {
-                libro = await Libro.findByPk(id);
-            }
+            let libro = libroService.buscarPorId(parseInt(id)) || await Libro.findByPk(id);
 
             if (!libro) {
-                return res.status(404).json({
-                    success: false,
-                    mensaje: 'Libro no encontrado'
-                });
+                return res.status(404).json({ success: false, mensaje: 'Libro no encontrado' });
             }
-
-            res.json({
-                success: true,
-                data: libro,
-                mensaje: 'Libro encontrado'
-            });
+            res.json({ success: true, data: libro, mensaje: 'Libro encontrado' });
         } catch (error) {
             console.error('Error al obtener libro por ID:', error);
-            res.status(500).json({
-                success: false,
-                error: error.message,
-                mensaje: 'Error al obtener el libro'
-            });
+            res.status(500).json({ success: false, error: error.message, mensaje: 'Error al obtener el libro' });
         }
     }
 
-    // Crear un nuevo libro
     async crear(req, res) {
         try {
             const datosLibro = req.body;
             const archivos = req.files;
 
-            console.log(`[LibroController] Crear libro: ${datosLibro.titulo}`);
-
-            // Soporte alias sin tilde (por formularios o navegadores que quiten tildes)
-            if (!datosLibro.año_publicacion && datosLibro.anio_publicacion) {
+            if (datosLibro.anio_publicacion && !datosLibro.año_publicacion) {
                 datosLibro.año_publicacion = datosLibro.anio_publicacion;
             }
+            delete datosLibro.anio_publicacion;
 
-            // Validaciones básicas
             if (!datosLibro.titulo || !datosLibro.autor || !datosLibro.genero) {
-                // Limpiar archivos temporales si hay error
                 if (archivos) cleanupFiles(archivos);
-                
-                return res.status(400).json({
-                    success: false,
-                    mensaje: 'Título, autor y género son campos obligatorios'
-                });
+                return res.status(400).json({ success: false, mensaje: 'Título, autor y género son campos obligatorios' });
             }
 
-            // Verificar si ya existe un libro con el mismo título y autor
-            const libroExistente = await Libro.findOne({
-                where: {
-                    titulo: datosLibro.titulo,
-                    autor: datosLibro.autor
-                }
-            });
-
+            const libroExistente = await Libro.findOne({ where: { titulo: datosLibro.titulo, autor: datosLibro.autor } });
             if (libroExistente) {
-                // Limpiar archivos temporales si hay error
                 if (archivos) cleanupFiles(archivos);
-                
-                return res.status(409).json({
-                    success: false,
-                    mensaje: 'Ya existe un libro con el mismo título y autor'
-                });
+                return res.status(409).json({ success: false, mensaje: 'Ya existe un libro con el mismo título y autor' });
             }
 
-            // Normalizar datos antes de crear
-            const datosNormalizados = normalizarDatosLibro(datosLibro);
+            if (datosLibro.isbn && datosLibro.isbn.trim() !== '') {
+                const libroConISBN = await Libro.findOne({ where: { isbn: datosLibro.isbn.trim() } });
+                if (libroConISBN) {
+                    if (archivos) cleanupFiles(archivos);
+                    return res.status(409).json({ success: false, mensaje: 'Ya existe un libro con el mismo ISBN' });
+                }
+            }
 
-            // Crear el libro usando el servicio (actualiza BD y árbol)
+            const datosNormalizados = normalizarDatosLibro(datosLibro);
             const nuevoLibro = await libroService.agregarLibroConArchivos(datosNormalizados, archivos);
 
-            res.status(201).json({
-                success: true,
-                data: nuevoLibro,
-                mensaje: 'Libro creado correctamente'
-            });
+            if (archivos && archivos.imagenes_adicionales) {
+                const imagenesUrls = await subirImagenesAdicionales(archivos, nuevoLibro.id);
+                if (imagenesUrls.length > 0) {
+                    await nuevoLibro.update({ imagenes_adicionales: imagenesUrls });
+                    nuevoLibro.imagenes_adicionales = imagenesUrls;
+                    await libroService.inicializarArbol();
+                }
+            }
+            res.status(201).json({ success: true, data: nuevoLibro, mensaje: 'Libro creado correctamente' });
         } catch (error) {
             console.error('Error al crear libro:', error);
-            
-            // Limpiar archivos temporales en caso de error
             if (req.files) cleanupFiles(req.files);
-            
-            res.status(500).json({
-                success: false,
-                error: error.message,
-                mensaje: 'Error al crear el libro'
-            });
+            res.status(500).json({ success: false, error: error.message, mensaje: 'Error al crear el libro' });
         }
     }
+    
+    // EN EL ARCHIVO libro.controller.js QUE ME DISTE
 
-    // Actualizar un libro
-    async actualizar(req, res) {
-        try {
-            const { id } = req.params;
-            const datosActualizados = req.body;
-            const archivos = req.files;
+// REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA VERSIÓN MÁS LIMPIA:
+// REEMPLAZA TU FUNCIÓN "actualizar" COMPLETA CON ESTA.
+async actualizar(req, res) {
+    try {
+        const { id } = req.params;
+        const archivos = req.files;
 
-            console.log(`[LibroController] Actualizar libro ID: ${id}`);
-
-            if (!datosActualizados.año_publicacion && datosActualizados.anio_publicacion) {
-                datosActualizados.año_publicacion = datosActualizados.anio_publicacion;
-            }
-
-            // Verificar que el libro existe
-            const libro = await Libro.findByPk(id);
-            if (!libro) {
-                // Limpiar archivos temporales si hay error
-                if (archivos) cleanupFiles(archivos);
-                
-                return res.status(404).json({
-                    success: false,
-                    mensaje: 'Libro no encontrado'
-                });
-            }
-
-            // Validaciones básicas
-            if (!datosActualizados.titulo || !datosActualizados.autor || !datosActualizados.genero) {
-                // Limpiar archivos temporales si hay error
-                if (archivos) cleanupFiles(archivos);
-                
-                return res.status(400).json({
-                    success: false,
-                    mensaje: 'Título, autor y género son campos obligatorios'
-                });
-            }
-
-            // Verificar si hay otro libro con el mismo título y autor (excluyendo el actual)
-            const libroExistente = await Libro.findOne({
-                where: {
-                    titulo: datosActualizados.titulo,
-                    autor: datosActualizados.autor,
-                    id: { [require('sequelize').Op.ne]: id } // Excluir el libro actual
-                }
-            });
-
-            if (libroExistente) {
-                // Limpiar archivos temporales si hay error
-                if (archivos) cleanupFiles(archivos);
-                
-                return res.status(409).json({
-                    success: false,
-                    mensaje: 'Ya existe otro libro con el mismo título y autor'
-                });
-            }
-
-            // Normalizar datos antes de actualizar
-            const datosNormalizados = normalizarDatosLibro(datosActualizados);
-
-            // Bandera para eliminar archivo PDF existente
-            const eliminarArchivo = datosActualizados.removeArchivo === 'true' || datosActualizados.removeArchivo === true;
-
-            // Verificar si realmente hay archivos válidos para procesar
-            const tienePortadaNueva = archivos && archivos.portada && archivos.portada[0] && archivos.portada[0].size > 0;
-            const tieneArchivoNuevo = archivos && archivos.archivo && archivos.archivo[0] && archivos.archivo[0].size > 0;
-            
-
-            // Actualizar usando el servicio apropiado
-            let libroActualizado;
-            if (tienePortadaNueva || tieneArchivoNuevo || eliminarArchivo) {
-                // Crear objeto de archivos solo con los que realmente existen
-                const archivosValidos = {};
-                if (tienePortadaNueva) archivosValidos.portada = archivos.portada;
-                if (tieneArchivoNuevo) archivosValidos.archivo = archivos.archivo;
-                
-                libroActualizado = await libroService.actualizarLibroConArchivos(id, { ...datosNormalizados, eliminarArchivo }, archivosValidos);
-            } else {
-                libroActualizado = await libroService.actualizarLibro(id, datosNormalizados);
-                
-                // Limpiar archivos temporales que no se usaron
-                if (archivos) {
-                    cleanupFiles(archivos);
-                }
-            }
-
-            res.json({
-                success: true,
-                data: libroActualizado,
-                mensaje: 'Libro actualizado correctamente'
-            });
-        } catch (error) {
-            console.error('Error al actualizar libro:', error);
-            
-            // Limpiar archivos temporales en caso de error
-            if (req.files) cleanupFiles(req.files);
-            
-            res.status(500).json({
-                success: false,
-                error: error.message,
-                mensaje: 'Error al actualizar el libro'
-            });
-        }
+        // ================================================================
+        // ¡¡¡AQUÍ ESTÁ LA LÍNEA QUE ARREGLA TODO!!!
+        // Convertimos el objeto especial de multer (req.body) en un objeto
+        // de JavaScript normal y corriente usando el spread operator (`...`).
+        const datosActualizados = { ...req.body };
+        // ================================================================
+        if (datosActualizados.hasOwnProperty('anio_publicacion')) {
+        // Crea la clave correcta que el modelo espera.
+        datosActualizados.año_publicacion = datosActualizados.anio_publicacion;
+        // Elimina la clave temporal que usamos para el transporte.
+        delete datosActualizados.anio_publicacion;
     }
+        // A partir de aquí, `datosActualizados` es un objeto normal y todo funcionará.
 
-    // Eliminar un libro
+        const libro = await Libro.findByPk(id);
+        if (!libro) {
+            if (archivos) cleanupFiles(archivos);
+            return res.status(404).json({ success: false, mensaje: 'Libro no encontrado' });
+        }
+
+        if (!datosActualizados.titulo || !datosActualizados.autor || !datosActualizados.genero) {
+            return res.status(400).json({ success: false, mensaje: 'Título, autor y género son campos obligatorios' });
+        }
+        const existeTitulo = await Libro.findOne({ where: { titulo: datosActualizados.titulo, autor: datosActualizados.autor, id: { [Op.ne]: id } } });
+        if (existeTitulo) return res.status(409).json({ success: false, mensaje: 'Ya existe otro libro con el mismo título y autor' });
+
+        if (datosActualizados.isbn && datosActualizados.isbn.trim() !== '') {
+            const existeISBN = await Libro.findOne({ where: { isbn: datosActualizados.isbn.trim(), id: { [Op.ne]: id } } });
+            if (existeISBN) return res.status(409).json({ success: false, mensaje: 'Ese ISBN ya está asignado a otro libro' });
+        }
+        
+        let imagenesFinales = libro.imagenes_adicionales || [];
+        if (datosActualizados.imagenes_adicionales && typeof datosActualizados.imagenes_adicionales === 'string') {
+            try { imagenesFinales = JSON.parse(datosActualizados.imagenes_adicionales); } catch (e) { /* Ignorar */ }
+        }
+        if (archivos && archivos.imagenes_adicionales) {
+            const nuevasUrls = await subirImagenesAdicionales(archivos, id);
+            imagenesFinales = [...imagenesFinales, ...nuevasUrls];
+        }
+        datosActualizados.imagenes_adicionales = imagenesFinales;
+
+        // Llamamos al servicio con nuestro objeto ya normalizado.
+        const libroActualizado = await libroService.actualizarLibroConArchivos(id, datosActualizados, archivos);
+        
+        res.json({ success: true, data: libroActualizado, mensaje: 'Libro actualizado correctamente' });
+
+    } catch (error) {
+        console.error('Error fatal capturado en el controlador:', error);
+        if (req.files) cleanupFiles(req.files);
+        res.status(500).json({ success: false, mensaje: 'Error interno al actualizar el libro', error: error.message });
+    }
+}
+    
+
+
+    // El resto de los métodos no necesitan cambios.
     async eliminar(req, res) {
         try {
             const { id } = req.params;
-
-            // Verificar que el libro existe
             const libro = await Libro.findByPk(id);
             if (!libro) {
-                return res.status(404).json({
-                    success: false,
-                    mensaje: 'Libro no encontrado'
-                });
+                return res.status(404).json({ success: false, mensaje: 'Libro no encontrado' });
             }
-
-            // Eliminar usando el servicio
             await libroService.eliminarLibro(id);
-
-            res.json({
-                success: true,
-                mensaje: 'Libro eliminado correctamente'
-            });
+            res.json({ success: true, mensaje: 'Libro eliminado correctamente' });
         } catch (error) {
             console.error('Error al eliminar libro:', error);
-            res.status(500).json({
-                success: false,
-                error: error.message,
-                mensaje: 'Error al eliminar el libro'
-            });
+            res.status(500).json({ success: false, error: error.message, mensaje: 'Error al eliminar el libro' });
         }
     }
 
@@ -304,7 +212,6 @@ class LibroController {
                 });
             }
 
-            // Redirigir directamente a la URL de Cloudinary
             res.redirect(libro.archivo);
         } catch (error) {
             console.error('❌ Error al obtener PDF:', error);
@@ -349,24 +256,18 @@ class LibroController {
             }
             const nombreArchivo = `${libro.titulo.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${libro.autor.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.pdf`;
 
-            // Usar fetch nativo (Node >=18) para obtener el stream desde Cloudinary
             const respuesta = await fetch(libro.archivo);
             if (!respuesta.ok) {
                 return res.status(502).json({ success: false, mensaje: 'No se pudo obtener el archivo remoto', status: respuesta.status });
             }
 
-            // Headers para forzar descarga
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(nombreArchivo)}"`);
-            // Evitar caching agresivo
             res.setHeader('Cache-Control', 'private, max-age=0, no-cache');
 
-            // Stream
             if (respuesta.body.pipe) {
-                // Si es un stream clásico
                 respuesta.body.pipe(res);
             } else {
-                // Web stream -> convertir
                 const nodeStream = require('stream');
                 const readable = nodeStream.Readable.fromWeb(respuesta.body);
                 readable.pipe(res);
@@ -393,25 +294,19 @@ class LibroController {
 
             switch (tipo) {
                 case 'titulo':
-                    const libroTitulo = libroService.buscarPorTitulo(termino);
-                    resultados = libroTitulo ? [libroTitulo] : [];
+                    resultados = libroService.buscarPorTitulo(termino) ? [libroService.buscarPorTitulo(termino)] : [];
                     break;
-                
                 case 'autor':
                     resultados = libroService.buscarPorAutor(termino);
                     break;
-                
                 case 'genero':
                     resultados = libroService.buscarPorGenero(termino);
                     break;
-                
-                case 'general':
                 default:
                     resultados = libroService.buscarGeneral(termino);
                     break;
             }
 
-            // Si no hay resultados, obtener sugerencias
             let sugerencias = [];
             if (resultados.length === 0) {
                 sugerencias = libroService.obtenerSugerencias(termino);
@@ -420,10 +315,10 @@ class LibroController {
             res.json({
                 success: true,
                 data: resultados,
-                sugerencias: sugerencias,
+                sugerencias,
                 total: resultados.length,
-                termino: termino,
-                tipo: tipo,
+                termino,
+                tipo,
                 mensaje: resultados.length > 0 ? 'Búsqueda completada' : 'No se encontraron resultados'
             });
         } catch (error) {
@@ -452,9 +347,9 @@ class LibroController {
 
             res.json({
                 success: true,
-                data: sugerencias.slice(0, 10), // Limitar a 10 sugerencias
-                prefijo: prefijo,
-                campo: campo
+                data: sugerencias.slice(0, 10),
+                prefijo,
+                campo
             });
         } catch (error) {
             console.error('Error en autocompletado:', error);
@@ -466,10 +361,10 @@ class LibroController {
         }
     }
 
-    // Nueva búsqueda optimizada (para UI de edición) usando árbol con prefijo / general
+    // Nueva búsqueda optimizada
     async busquedaOptimizada(req, res) {
         try {
-            const { q = '', tipo = 'auto', limite = '100', prefijo = 'true', genero, autor } = req.query;
+            const { q = '', limite = '100', prefijo = 'true', genero, autor } = req.query;
             const term = q.trim();
             const max = Math.min(parseInt(limite) || 100, 300);
 
@@ -479,48 +374,28 @@ class LibroController {
 
             let resultados = [];
 
-            // Estrategia:
-            // 1. Si tipo=tituloExacto intentar coincidencia exacta primero.
-            // 2. Si prefijo=true intentar buscarPorPrefijo.
-            // 3. Fallback -> buscarGeneral.
-            // 4. Si sigue vacío -> sugerencias difusas.
-
-            if (tipo === 'tituloExacto') {
-                const exacto = libroService.buscarPorTitulo(term);
-                if (exacto) resultados = [exacto];
-            }
-
-            if (resultados.length === 0 && prefijo === 'true') {
+            if (prefijo === 'true') {
                 resultados = libroService.buscarPorPrefijo(term, 'titulo');
             }
-
             if (resultados.length === 0) {
                 resultados = libroService.buscarGeneral(term);
             }
 
-            // Filtros secundarios (en memoria)
             if (genero) {
-                const gLower = genero.toLowerCase();
-                resultados = resultados.filter(l => l.genero && l.genero.toLowerCase().includes(gLower));
+                resultados = resultados.filter(l => l.genero && l.genero.toLowerCase().includes(genero.toLowerCase()));
             }
             if (autor) {
-                const aLower = autor.toLowerCase();
-                resultados = resultados.filter(l => l.autor && l.autor.toLowerCase().includes(aLower));
+                resultados = resultados.filter(l => l.autor && l.autor.toLowerCase().includes(autor.toLowerCase()));
             }
 
             const total = resultados.length;
-            resultados = resultados.slice(0, max);
-
-            let sugerencias = [];
-            if (total === 0) {
-                sugerencias = libroService.obtenerSugerencias(term).slice(0, 5);
-            }
+            const sugerencias = total === 0 ? libroService.obtenerSugerencias(term).slice(0, 5) : [];
 
             return res.json({
                 success: true,
                 total,
                 limite: max,
-                data: resultados,
+                data: resultados.slice(0, max),
                 sugerencias,
                 termino: term,
                 mensaje: total > 0 ? 'Resultados obtenidos' : 'Sin coincidencias'
@@ -539,10 +414,7 @@ class LibroController {
 
             res.json({
                 success: true,
-                data: {
-                    ...estadisticas,
-                    consistencia: consistencia
-                },
+                data: { ...estadisticas, consistencia },
                 mensaje: 'Estadísticas obtenidas correctamente'
             });
         } catch (error) {
@@ -555,23 +427,19 @@ class LibroController {
         }
     }
 
-    //obtener recorrido del árbol con filtros ligeros
+    //obtener recorrido del árbol
     async obtenerRecorrido(req, res) {
         try {
             const { tipo = 'inorden', limite = '200', genero, autor, q } = req.query;
             const max = Math.min(parseInt(limite) || 200, 500);
 
-            // Obtener recorrido base
             let lista = libroService.obtenerRecorrido(tipo);
 
-            // Filtros opcionales en memoria
             if (genero) {
-                const g = genero.toLowerCase();
-                lista = lista.filter(l => l.genero && l.genero.toLowerCase().includes(g));
+                lista = lista.filter(l => l.genero && l.genero.toLowerCase().includes(genero.toLowerCase()));
             }
             if (autor) {
-                const a = autor.toLowerCase();
-                lista = lista.filter(l => l.autor && l.autor.toLowerCase().includes(a));
+                lista = lista.filter(l => l.autor && l.autor.toLowerCase().includes(autor.toLowerCase()));
             }
             if (q) {
                 const term = q.toLowerCase();

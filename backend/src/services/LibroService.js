@@ -1,341 +1,238 @@
-const { arbolLibros } = require('../arbol');
-const { cloudinaryAdapter } = require('../adapters/cloudinaryAdapter');
-const Libro = require('../models/Libro');
+const { arbolLibros } = require("../arbol");
+const { cloudinaryAdapter } = require("../adapters/cloudinaryAdapter");
+const Libro = require("../models/Libro");
 
 class LibroService {
-    constructor() {
-        this.arbol = arbolLibros;
+  constructor() {
+    this.arbol = arbolLibros;
+  }
+
+  async inicializarArbol() {
+    try {
+      const libros = await Libro.findAll({ order: [["titulo", "ASC"]] });
+      this.arbol.limpiar();
+      libros.forEach((libro) => {
+        const libroData = libro.toJSON();
+        this.arbol.ingresarLibro(libroData);
+      });
+      console.log(
+        `[LibroService] Árbol inicializado con ${libros.length} libros`
+      );
+      return libros.length;
+    } catch (error) {
+      console.error("Error al inicializar el árbol:", error.message);
+      throw error;
     }
+  }
 
-    async inicializarArbol() {
-        try {
-            
-            const libros = await Libro.findAll({
-                order: [['titulo', 'ASC']]
-            });
+  async agregarLibroConArchivos(datosLibro, archivos = null) {
+    try {
+      const nuevoLibro = await Libro.create(datosLibro);
+      let urlPortada = null;
+      let urlArchivo = null;
 
-            this.arbol.limpiar();
-
-            libros.forEach(libro => {
-                const libroData = libro.toJSON();
-                this.arbol.ingresarLibro(libroData);
-            });
-
-            console.log(`[LibroService] Árbol inicializado con ${libros.length} libros`);
-            return libros.length;
-        } catch (error) {
-            console.error('Error al inicializar el árbol:', error.message);
-            throw error;
+      if (archivos) {
+        if (archivos.portada && archivos.portada[0]) {
+          const resultadoPortada = await cloudinaryAdapter.subirPortada(
+            archivos.portada[0],
+            nuevoLibro.id
+          );
+          urlPortada = resultadoPortada.url;
         }
-    }
-
-    async agregarLibroConArchivos(datosLibro, archivos = null) {
-        try {
-            
-            // Primero crear el libro en la BD para obtener el ID
-            const nuevoLibro = await Libro.create(datosLibro);
-
-            let urlPortada = null;
-            let urlArchivo = null;
-
-            // Procesar archivos si existen
-            if (archivos) {
-                // Subir portada si existe
-                if (archivos.portada && archivos.portada[0]) {
-                    const resultadoPortada = await cloudinaryAdapter.subirPortada(
-                        archivos.portada[0], 
-                        nuevoLibro.id
-                    );
-                    urlPortada = resultadoPortada.url;
-                }
-
-                // Subir archivo PDF si existe
-                if (archivos.archivo && archivos.archivo[0]) {
-                    const resultadoArchivo = await cloudinaryAdapter.subirPDF(
-                        archivos.archivo[0], 
-                        nuevoLibro.id
-                    );
-                    urlArchivo = resultadoArchivo.url;
-                }
-
-                // Actualizar el libro con las URLs si se subieron archivos
-                if (urlPortada || urlArchivo) {
-                    const datosActualizacion = {};
-                    if (urlPortada) datosActualizacion.portada = urlPortada;
-                    if (urlArchivo) datosActualizacion.archivo = urlArchivo;
-
-                    await nuevoLibro.update(datosActualizacion);
-                }
-            }
-
-            // Agregar al árbol binario
-            const libroData = nuevoLibro.toJSON();
-            this.arbol.ingresarLibro(libroData);
-
-            console.log(`[LibroService] Libro creado: ${nuevoLibro.titulo}`);
-            return nuevoLibro;
-
-        } catch (error) {
-            console.error('❌ Error al agregar libro con archivos:', error.message);
-            throw error;
+        if (archivos.archivo && archivos.archivo[0]) {
+          const resultadoArchivo = await cloudinaryAdapter.subirPDF(
+            archivos.archivo[0],
+            nuevoLibro.id
+          );
+          urlArchivo = resultadoArchivo.url;
         }
-    }
-
-    async agregarLibro(datosLibro) {
-        try {
-            const nuevoLibro = await Libro.create(datosLibro);
-            
-            const libroData = nuevoLibro.toJSON();
-            this.arbol.ingresarLibro(libroData);
-
-            console.log(`[LibroService] Libro creado: ${nuevoLibro.titulo}`);
-            return nuevoLibro;
-        } catch (error) {
-            console.error('❌ Error al agregar libro:', error.message);
-            throw error;
+        if (urlPortada || urlArchivo) {
+          const datosActualizacion = {};
+          if (urlPortada) datosActualizacion.portada = urlPortada;
+          if (urlArchivo) datosActualizacion.archivo = urlArchivo;
+          await nuevoLibro.update(datosActualizacion);
         }
+      }
+
+      const libroData = nuevoLibro.toJSON();
+      this.arbol.ingresarLibro(libroData);
+      console.log(`[LibroService] Libro creado: ${nuevoLibro.titulo}`);
+      return nuevoLibro;
+    } catch (error) {
+      console.error("❌ Error al agregar libro con archivos:", error.message);
+      throw error;
     }
+  }
 
-    async actualizarLibro(id, datosActualizados) {
-        try {
-            const libro = await Libro.findByPk(id);
-            if (!libro) {
-                throw new Error('Libro no encontrado');
-            }
+  async agregarLibro(datosLibro) {
+    try {
+      const nuevoLibro = await Libro.create(datosLibro);
+      const libroData = nuevoLibro.toJSON();
+      this.arbol.ingresarLibro(libroData);
+      console.log(`[LibroService] Libro creado: ${nuevoLibro.titulo}`);
+      return nuevoLibro;
+    } catch (error) {
+      console.error("❌ Error al agregar libro:", error.message);
+      throw error;
+    }
+  }
 
-            await libro.update(datosActualizados);
-            await this.inicializarArbol();
+  // REEMPLAZA LA FUNCIÓN COMPLETA EN TU LibroService.js CON ESTA:
+// REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA:
+async actualizarLibroConArchivos(id, datosActualizados, archivos = null) {
+    try {
+        const libro = await Libro.findByPk(id);
+        if (!libro) throw new Error('Libro no encontrado');
 
-            console.log(`[LibroService] Libro actualizado: ${libro.titulo}`);
-            return libro;
-        } catch (error) {
-            console.error('❌ Error al actualizar libro:', error.message);
-            throw error;
+        // Limpieza de datos
+        if (datosActualizados.hasOwnProperty('año_publicacion')) {
+            const año = datosActualizados.año_publicacion;
+            datosActualizados.año_publicacion = (año === '' || año === 'null' || año === null || año === undefined) ? null : parseInt(año, 10);
         }
-    }
+        if (datosActualizados.isbn === '') datosActualizados.isbn = null;
+        if (datosActualizados.editorial === '') datosActualizados.editorial = null;
+        if (datosActualizados.descripcion === '') datosActualizados.descripcion = null;
 
-    async actualizarLibroConArchivos(id, datosActualizados, archivos = null) {
-        try {
-            
-            const libro = await Libro.findByPk(id);
-            if (!libro) {
-                throw new Error('Libro no encontrado');
-            }
+        // El resto de tu lógica de archivos...
+        const eliminarArchivoPDF = datosActualizados.removeArchivo === 'true';
 
-            const eliminarArchivo = datosActualizados.eliminarArchivo === true || datosActualizados.eliminarArchivo === 'true';
-
-            // No mantener la bandera en update directo
-            const datosBasicos = { ...datosActualizados };
-            delete datosBasicos.eliminarArchivo;
-
-            // Actualizar datos básicos primero
-            await libro.update(datosBasicos);
-
-            let urlPortada = libro.portada; // Mantener portada actual por defecto
-            let urlArchivo = libro.archivo; // Mantener archivo actual por defecto
-
-            // Procesar archivos si existen
-            if (archivos) {
-                // Subir nueva portada si existe
-                if (archivos.portada && archivos.portada[0]) {
-                    
-                    // Eliminar portada anterior si existe
-                    if (libro.portada) {
-                        try {
-                            const publicIdAnterior = cloudinaryAdapter.extraerPublicId(libro.portada);
-                            if (publicIdAnterior) {
-                                await cloudinaryAdapter.eliminarImagen(publicIdAnterior);
-                            }
-                        } catch (error) {
-                            console.warn('⚠️ No se pudo eliminar la portada anterior:', error.message);
-                        }
-                    }
-
-                    const resultadoPortada = await cloudinaryAdapter.subirPortada(
-                        archivos.portada[0], 
-                        libro.id
-                    );
-                    urlPortada = resultadoPortada.url;
-                }
-
-                // Subir nuevo archivo PDF si existe
-                if (archivos.archivo && archivos.archivo[0]) {
-                    
-                    // Eliminar archivo anterior si existe
-                    if (libro.archivo) {
-                        try {
-                            const publicIdAnterior = cloudinaryAdapter.extraerPublicId(libro.archivo);
-                            if (publicIdAnterior) {
-                                await cloudinaryAdapter.eliminarArchivo(publicIdAnterior);
-                            }
-                        } catch (error) {
-                            console.warn('⚠️ No se pudo eliminar el archivo anterior:', error.message);
-                        }
-                    }
-
-                    const resultadoArchivo = await cloudinaryAdapter.subirPDF(
-                        archivos.archivo[0], 
-                        libro.id
-                    );
-                    urlArchivo = resultadoArchivo.url;
-                }
-
-                // Eliminar archivo existente si se solicitó y no se subió uno nuevo
-                if (eliminarArchivo && !archivos.archivo && libro.archivo) {
-                    try {
-                        const publicIdAnterior = cloudinaryAdapter.extraerPublicId(libro.archivo);
-                        if (publicIdAnterior) {
-                            await cloudinaryAdapter.eliminarArchivo(publicIdAnterior);
-                        }
-                        urlArchivo = null;
-                    } catch (error) {
-                        console.warn('⚠️ No se pudo eliminar el archivo solicitado:', error.message);
-                    }
-                }
-
-                // Actualizar el libro con las nuevas URLs si se subieron archivos o se eliminó
-                if (archivos.portada || archivos.archivo || eliminarArchivo) {
-                    const datosActualizacion = {};
-                    if (archivos.portada) datosActualizacion.portada = urlPortada;
-                    if (archivos.archivo || eliminarArchivo) datosActualizacion.archivo = urlArchivo; // puede ser null
-
-                    await libro.update(datosActualizacion);
-                }
-            }
-
-            // Actualizar el árbol binario
-            await this.inicializarArbol();
-
-            // Obtener el libro actualizado
-            const libroActualizado = await Libro.findByPk(id);
-
-            console.log(`[LibroService] Libro actualizado (archivos): ${libroActualizado.titulo}`);
-            return libroActualizado;
-
-        } catch (error) {
-            console.error('❌ Error al actualizar libro con archivos:', error.message);
-            throw error;
+        if (archivos && archivos.portada && archivos.portada[0]) {
+            if (libro.portada) { try { const pid = cloudinaryAdapter.extraerPublicId(libro.portada); if (pid) await cloudinaryAdapter.eliminarImagen(pid); } catch (e) { console.warn(e.message); } }
+            const res = await cloudinaryAdapter.subirPortada(archivos.portada[0], libro.id);
+            datosActualizados.portada = res.url;
         }
-    }
-
-    async eliminarLibro(id) {
-        try {
-            const libro = await Libro.findByPk(id);
-            if (!libro) {
-                throw new Error('Libro no encontrado');
-            }
-
-            const titulo = libro.titulo;
-            
-            await libro.destroy();
-            
-            await this.inicializarArbol();
-
-            console.log(`[LibroService] Libro eliminado: ${titulo}`);
-            return true;
-        } catch (error) {
-            console.error('❌ Error al eliminar libro:', error.message);
-            throw error;
+        if (archivos && archivos.archivo && archivos.archivo[0]) {
+            if (libro.archivo) { try { const pid = cloudinaryAdapter.extraerPublicId(libro.archivo); if (pid) await cloudinaryAdapter.eliminarArchivo(pid); } catch (e) { console.warn(e.message); } }
+            const res = await cloudinaryAdapter.subirPDF(archivos.archivo[0], libro.id);
+            datosActualizados.archivo = res.url;
+        } else if (eliminarArchivoPDF && libro.archivo) {
+            try { const pid = cloudinaryAdapter.extraerPublicId(libro.archivo); if (pid) await cloudinaryAdapter.eliminarArchivo(pid); } catch (e) { console.warn(e.message); }
+            datosActualizados.archivo = null;
         }
-    }
 
-    buscarPorTitulo(titulo) {
-        return this.arbol.buscarPorTitulo(titulo);
+        await libro.update(datosActualizados);
+        await this.inicializarArbol();
+        console.log(`[LibroService] Libro actualizado: ${libro.titulo}`);
+        return await Libro.findByPk(id);
+    } catch (error) {
+        console.error('❌ Error en servicio al actualizar libro:', error);
+        throw error;
     }
+}
 
-    buscarPorAutor(autor) {
-        return this.arbol.buscarPorAutor(autor);
+  async eliminarLibro(id) {
+    try {
+      const libro = await Libro.findByPk(id);
+      if (!libro) {
+        throw new Error("Libro no encontrado");
+      }
+      const titulo = libro.titulo;
+      await libro.destroy();
+      await this.inicializarArbol();
+      console.log(`[LibroService] Libro eliminado: ${titulo}`);
+      return true;
+    } catch (error) {
+      console.error("❌ Error al eliminar libro:", error.message);
+      throw error;
     }
+  }
 
-    buscarPorGenero(genero) {
-        return this.arbol.buscarPorGenero(genero);
-    }
+  buscarPorTitulo(titulo) {
+    return this.arbol.buscarPorTitulo(titulo);
+  }
 
-    buscarGeneral(termino) {
-        return this.arbol.buscarGeneral(termino);
-    }
+  buscarPorAutor(autor) {
+    return this.arbol.buscarPorAutor(autor);
+  }
 
-    obtenerSugerencias(termino) {
-        return this.arbol.obtenerSugerencias(termino);
-    }
+  buscarPorGenero(genero) {
+    return this.arbol.buscarPorGenero(genero);
+  }
 
-    buscarPorPrefijo(prefijo, campo = 'titulo') {
-        return this.arbol.buscarPorPrefijo(prefijo, campo);
-    }
+  buscarGeneral(termino) {
+    return this.arbol.buscarGeneral(termino);
+  }
 
-    obtenerTodosLosLibros() {
-        return this.arbol.obtenerTodosLosLibros();
-    }
+  obtenerSugerencias(termino) {
+    return this.arbol.obtenerSugerencias(termino);
+  }
 
-    buscarPorId(id) {
-        return this.arbol.buscarPorId(id);
-    }
+  buscarPorPrefijo(prefijo, campo = "titulo") {
+    return this.arbol.buscarPorPrefijo(prefijo, campo);
+  }
 
-    obtenerEstadisticas() {
-        const base = this.arbol.obtenerEstadisticas();
-        // Calcular género con mayor cantidad
-        try {
-            const todos = this.arbol.obtenerTodosLosLibros();
-            const conteo = {};
-            todos.forEach(l => {
-                if (l.genero) {
-                    const g = l.genero.trim();
-                    conteo[g] = (conteo[g] || 0) + 1;
-                }
-            });
-            let topGenero = null;
-            for (const g in conteo) {
-                if (!topGenero || conteo[g] > topGenero.cantidad) {
-                    topGenero = { genero: g, cantidad: conteo[g] };
-                }
-            }
-            return { ...base, topGenero };
-        } catch (e) {
-            return { ...base, topGenero: null };
+  obtenerTodosLosLibros() {
+    return this.arbol.obtenerTodosLosLibros();
+  }
+
+  buscarPorId(id) {
+    return this.arbol.buscarPorId(id);
+  }
+
+  obtenerEstadisticas() {
+    const base = this.arbol.obtenerEstadisticas();
+    // Calcular género con mayor cantidad
+    try {
+      const todos = this.arbol.obtenerTodosLosLibros();
+      const conteo = {};
+      todos.forEach((l) => {
+        if (l.genero) {
+          const g = l.genero.trim();
+          conteo[g] = (conteo[g] || 0) + 1;
         }
-    }
-
-    // Obtener recorrido del árbol (preorden, inorden, postorden)
-    obtenerRecorrido(tipo = 'inorden') {
-        const t = (tipo || '').toLowerCase();
-        switch (t) {
-            case 'preorden':
-            case 'pre':
-                return this.arbol.preOrden();
-            case 'postorden':
-            case 'post':
-                return this.arbol.postOrden();
-            case 'inorden':
-            case 'in':
-            default:
-                return this.arbol.inOrden();
+      });
+      let topGenero = null;
+      for (const g in conteo) {
+        if (!topGenero || conteo[g] > topGenero.cantidad) {
+          topGenero = { genero: g, cantidad: conteo[g] };
         }
+      }
+      return { ...base, topGenero };
+    } catch (e) {
+      return { ...base, topGenero: null };
     }
+  }
 
-
-    async verificarConsistencia() {
-        try {
-            const librosBD = await Libro.count();
-            const librosArbol = this.arbol.contarLibros();
-            
-            const consistente = librosBD === librosArbol;
-            
-            return {
-                consistente,
-                librosBD,
-                librosArbol,
-                diferencia: Math.abs(librosBD - librosArbol)
-            };
-        } catch (error) {
-            console.error('❌ Error al verificar consistencia:', error.message);
-            throw error;
-        }
+  // Obtener recorrido del árbol (preorden, inorden, postorden)
+  obtenerRecorrido(tipo = "inorden") {
+    const t = (tipo || "").toLowerCase();
+    switch (t) {
+      case "preorden":
+      case "pre":
+        return this.arbol.preOrden();
+      case "postorden":
+      case "post":
+        return this.arbol.postOrden();
+      case "inorden":
+      case "in":
+      default:
+        return this.arbol.inOrden();
     }
+  }
+
+  async verificarConsistencia() {
+    try {
+      const librosBD = await Libro.count();
+      const librosArbol = this.arbol.contarLibros();
+
+      const consistente = librosBD === librosArbol;
+
+      return {
+        consistente,
+        librosBD,
+        librosArbol,
+        diferencia: Math.abs(librosBD - librosArbol),
+      };
+    } catch (error) {
+      console.error("❌ Error al verificar consistencia:", error.message);
+      throw error;
+    }
+  }
 }
 
 const libroService = new LibroService();
 
 module.exports = {
-    LibroService,
-    libroService
+  LibroService,
+  libroService,
 };

@@ -3,8 +3,8 @@ class AgregarLibroPage {
         this.formulario = null;
         this.generoInput = null;
         this.generoSelect = null;
-        this.suggestionsList = null; // contenedor de sugerencias
-        this.autocompleteInstance = null; // instancia del util
+        this.suggestionsList = null;
+        this.autocompleteInstance = null;
     }
 
     init() {
@@ -13,7 +13,6 @@ class AgregarLibroPage {
         this.prefillTituloDesdeQuery();
         this.inicializarFormulario();
         this.inicializarAutocompletadoCompartido();
-        // Log inicial (único) para diagnosticar carga de la página (mantener si se desea monitoreo básico)
         console.log('📚 [AgregarLibro] Página inicializada');
     }
 
@@ -56,6 +55,7 @@ class AgregarLibroPage {
             genero: this.obtenerGenero(),
             editorial: document.getElementById('editorial')?.value || '',
             año_publicacion: document.getElementById('año_publicacion')?.value || '',
+            isbn: document.getElementById('isbn')?.value || '',
             descripcion: document.getElementById('descripcion')?.value || ''
         };
     }
@@ -76,37 +76,42 @@ class AgregarLibroPage {
             UIUtils.mostrarLoading(guardarBtn, 'Guardando...');
             UIUtils.limpiarNotificaciones();
 
+            // ▶▶▶ OBTENER ARCHIVOS - ESTO ES LO QUE FALTABA
+            const portadaFile = document.getElementById('portada')?.files[0];
+            const archivoFile = document.getElementById('archivo')?.files[0];
+            const imagenesAdicionalesInput = document.getElementById('imagenes_adicionales');
+            const imagenesAdicionalesFiles = imagenesAdicionalesInput ? Array.from(imagenesAdicionalesInput.files) : [];
+            // ◀◀◀
+
             const datosOriginales = this.recopilarDatos();
-            // Normalizar año: eliminar espacios y validar número
+            
             if (datosOriginales.año_publicacion) {
                 const raw = datosOriginales.año_publicacion.toString().trim();
                 if (/^\d{1,4}$/.test(raw)) {
-                    datosOriginales.año_publicacion = raw; // mantener string numérica para logging
+                    datosOriginales.año_publicacion = raw;
                 } else {
                     console.warn('[AgregarLibro] Año inválido, se ignorará:', raw);
                     datosOriginales.año_publicacion = '';
                 }
             }
+            
             const datosLimpios = Validation.limpiarDatos(datosOriginales);
-
             const validacion = Validation.validarLibro(datosLimpios);
+            
             if (!validacion.valido) {
                 throw new Error(validacion.errores.join(', '));
             }
 
-            const portadaFile = document.getElementById('portada')?.files[0];
-            const archivoFile = document.getElementById('archivo')?.files[0];
-
             let datosParaEnviar;
             
-            if (portadaFile || archivoFile) {
-                // Crear FormData para archivos
+            // ▶▶▶ CAMBIAR LA CONDICIÓN PARA INCLUIR IMÁGENES ADICIONALES
+            if (portadaFile || archivoFile || imagenesAdicionalesFiles.length > 0) {
                 datosParaEnviar = new FormData();
                 
-                // Agregar datos del libro
                 datosParaEnviar.append('titulo', datosLimpios.titulo);
                 datosParaEnviar.append('autor', datosLimpios.autor);
                 datosParaEnviar.append('genero', datosLimpios.genero);
+                datosParaEnviar.append('isbn', datosLimpios.isbn || '');
                 
                 if (datosLimpios.editorial) {
                     datosParaEnviar.append('editorial', datosLimpios.editorial);
@@ -116,7 +121,6 @@ class AgregarLibroPage {
                     const añoNum = parseInt(datosLimpios.año_publicacion, 10);
                     if (!isNaN(añoNum)) {
                         datosParaEnviar.append('año_publicacion', añoNum.toString());
-                        // Alias sin tilde para compatibilidad potencial
                         datosParaEnviar.append('anio_publicacion', añoNum.toString());
                     }
                 }
@@ -125,20 +129,26 @@ class AgregarLibroPage {
                     datosParaEnviar.append('descripcion', datosLimpios.descripcion);
                 }
 
-                // Agregar archivos si existen
                 if (portadaFile) {
                     datosParaEnviar.append('portada', portadaFile);
+                }
+
+                // ▶▶▶ AGREGAR IMÁGENES ADICIONALES AL FORM DATA
+                if (imagenesAdicionalesFiles.length > 0) {
+                    imagenesAdicionalesFiles.forEach((file, index) => {
+                        datosParaEnviar.append('imagenes_adicionales', file);
+                    });
                 }
                 
                 if (archivoFile) {
                     datosParaEnviar.append('archivo', archivoFile);
                 }
             } else {
-                // Sin archivos, usar JSON normal
                 datosParaEnviar = {
                     titulo: datosLimpios.titulo,
                     autor: datosLimpios.autor,
                     genero: datosLimpios.genero,
+                    isbn: datosLimpios.isbn || null,
                     editorial: datosLimpios.editorial || null,
                     año_publicacion: datosLimpios.año_publicacion ? parseInt(datosLimpios.año_publicacion, 10) : null,
                     descripcion: datosLimpios.descripcion || null
@@ -147,18 +157,14 @@ class AgregarLibroPage {
 
             const resultado = await LibroService.crear(datosParaEnviar);
 
-            // Mostrar solo toast (se elimina la alerta clásica)
             UIUtils.mostrarToast(`Libro "${datosLimpios.titulo}" guardado correctamente`, 'success');
-
             this.limpiarFormulario();
 
-            // Refuerzo asíncrono (por si el navegador reinyecta autofill)
             requestAnimationFrame(() => {
                 this.reforzarLimpieza();
             });
 
             setTimeout(async () => {
-                // Refuerzo justo antes del confirm
                 this.reforzarLimpieza();
                 const continuar = await UIUtils.confirmarAccion(
                     '¿Deseas agregar otro libro?',
@@ -183,35 +189,29 @@ class AgregarLibroPage {
         }
     }
 
-    // Limpiar formulario
     limpiarFormulario() {
-        // Limpiar formulario básico
         UIUtils.limpiarFormulario(this.formulario);
         
-        // Limpiar campos específicos
         if (this.generoInput) {
             this.generoInput.value = '';
         }
         
-        // Resetear select de género al estado inicial
         if (this.generoSelect) {
             this.generoSelect.selectedIndex = 0;
         }
         
-        // Ocultar sugerencias de género
         if (this.suggestionsList) {
             this.suggestionsList.style.display = 'none';
             this.suggestionsList.innerHTML = '';
         }
         
-        // Limpiar campos de archivo específicamente
         const portadaInput = document.getElementById('portada');
         const archivoInput = document.getElementById('archivo');
+        const imagenesInput = document.getElementById('imagenes_adicionales'); // ▶▶▶ NUEVO
         
         if (portadaInput) {
             portadaInput.value = '';
             if (portadaInput.files && portadaInput.files.length) {
-                // Crear un input temporal para reset duro si el navegador mantiene referencia
                 const clone = portadaInput.cloneNode(true);
                 portadaInput.parentNode.replaceChild(clone, portadaInput);
             }
@@ -225,11 +225,16 @@ class AgregarLibroPage {
             }
         }
         
-        // Limpiar notificaciones
-        // No limpiar notificaciones aquí para que el mensaje de éxito permanezca visible
+        // ▶▶▶ LIMPIAR INPUT DE IMÁGENES ADICIONALES
+        if (imagenesInput) {
+            imagenesInput.value = '';
+            if (imagenesInput.files && imagenesInput.files.length) {
+                const clone = imagenesInput.cloneNode(true);
+                imagenesInput.parentNode.replaceChild(clone, imagenesInput);
+            }
+        }
     }
 
-    // Refuerzo de limpieza profundo
     reforzarLimpieza() {
         try {
             if (!this.formulario) return;
@@ -239,23 +244,26 @@ class AgregarLibroPage {
                     i.value = '';
                 }
             });
+            
             const portadaInput = document.getElementById('portada');
             const archivoInput = document.getElementById('archivo');
-            [portadaInput, archivoInput].forEach(inp => {
+            const imagenesInput = document.getElementById('imagenes_adicionales'); // ▶▶▶ NUEVO
+            
+            [portadaInput, archivoInput, imagenesInput].forEach(inp => {
                 if (inp) {
                     const nuevo = inp.cloneNode(true);
                     inp.parentNode.replaceChild(nuevo, inp);
                 }
             });
+            
             if (this.generoSelect) this.generoSelect.selectedIndex = 0;
             if (this.generoInput) this.generoInput.value = '';
-            // Refuerzo de limpieza silencioso (log eliminado para producción)
+            
         } catch (e) {
             console.warn('[AgregarLibro] Error en refuerzo de limpieza:', e);
         }
     }
 
-    // Nueva inicialización usando util compartido
     inicializarAutocompletadoCompartido() {
         if (!window.GeneroAutocomplete) {
             console.warn('[AgregarLibro] GeneroAutocomplete util no cargado');
@@ -269,7 +277,6 @@ class AgregarLibroPage {
         });
     }
 
-    // Prefill del título cuando se llega desde la búsqueda en editar (query param ?titulo=)
     prefillTituloDesdeQuery() {
         try {
             const params = new URLSearchParams(window.location.search);
@@ -279,30 +286,27 @@ class AgregarLibroPage {
             if (!titulo) return;
             const input = document.getElementById('titulo');
             if (input && !input.value) {
-                // Limitar longitud extrema para evitar inyecciones UI raras
                 if (titulo.length > 180) {
                     titulo = titulo.slice(0, 180);
                 }
                 input.value = titulo;
-                // Disparar evento input por si hay validaciones en vivo
                 input.dispatchEvent(new Event('input', { bubbles: true }));
-                // Notificación discreta (si UIUtils soporta tipo info)
+                
                 if (window.UIUtils && typeof UIUtils.mostrarNotificacion === 'function') {
                     UIUtils.mostrarNotificacion('info', 'Título prellenado desde búsqueda');
                 }
-                // Mostrar badge visual
+                
                 const badge = document.getElementById('titulo-prefill-badge');
                 if (badge) {
                     badge.style.display = 'inline-block';
-                    // Opcional: ocultar después de unos segundos
                     setTimeout(() => {
                         if (badge) badge.style.opacity = '0.35';
                     }, 6000);
                 }
-                // Foco en el siguiente campo para acelerar flujo
+                
                 const autorInput = document.getElementById('autor');
                 autorInput?.focus();
-                // Eliminar query param para evitar repetir prefill en refrescos o al copiar URL
+                
                 try {
                     const cleanUrl = window.location.pathname;
                     window.history.replaceState({}, document.title, cleanUrl);

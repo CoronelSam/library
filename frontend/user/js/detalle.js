@@ -48,12 +48,8 @@ class DetalleLibro {
         // Actualizar título de la página
         document.title = `${libro.titulo} - Biblioteca`;
 
-        // Actualizar portada
-        const portadaElement = document.getElementById('detallePortada');
-        if (portadaElement) {
-            portadaElement.src = libro.portada || 'https://via.placeholder.com/400x600.png/E9ECEF/343A40?text=Sin+Portada';
-            portadaElement.alt = `Portada de ${libro.titulo}`;
-        }
+        // Novedad: Llamar a la función que construye y muestra la galería
+        this.configurarGaleria(libro);
 
         // Actualizar información básica
         this.actualizarElemento('detalleTitulo', libro.titulo || 'Título no disponible');
@@ -61,7 +57,9 @@ class DetalleLibro {
         this.actualizarElemento('detalleGenero', libro.genero || 'Género no especificado');
         this.actualizarElemento('detalleAnio', libro.año_publicacion || 'No especificado');
         this.actualizarElemento('detalleEditorial', libro.editorial || 'No especificada');
-        this.actualizarElemento('detalleCodigo', libro.id || 'No disponible');
+
+        // Novedad: Mostrar el ISBN si existe
+        this.mostrarISBN(libro.isbn);
 
         // Mostrar descripción si existe
         this.mostrarDescripcion(libro.descripcion);
@@ -73,6 +71,60 @@ class DetalleLibro {
         this.configurarBotonesPDF(libro);
     }
 
+    configurarGaleria(libro) {
+        const indicatorsContainer = document.getElementById('galeria-indicators');
+        const innerContainer = document.getElementById('galeria-inner');
+        const carouselElement = document.getElementById('libroGaleria');
+
+        if (!indicatorsContainer || !innerContainer || !carouselElement) {
+            console.error('Elementos de la galería no encontrados en el DOM.');
+            return;
+        }
+
+        // Creamos un array con todas las imágenes: primero la portada, luego las adicionales.
+        // El .filter(Boolean) elimina cualquier entrada nula o vacía.
+        const imagenes = [libro.portada, ...(libro.imagenes_adicionales || [])].filter(Boolean);
+
+        // Si después de filtrar no hay imágenes, ponemos una por defecto.
+        if (imagenes.length === 0) {
+            imagenes.push('https://via.placeholder.com/400x600.png/E9ECEF/343A40?text=Sin+Portada');
+        }
+
+        let indicatorsHtml = '';
+        let innerHtml = '';
+
+        // Construimos el HTML para cada imagen en la galería
+        imagenes.forEach((url, index) => {
+            const esActiva = index === 0 ? 'active' : '';
+            indicatorsHtml += `<button type="button" data-bs-target="#libroGaleria" data-bs-slide-to="${index}" class="${esActiva}" aria-current="true"></button>`;
+            innerHtml += `
+                <div class="carousel-item ${esActiva}">
+                    <img src="${url}" class="d-block w-100 portada" alt="Imagen ${index + 1} de ${libro.titulo}">
+                </div>
+            `;
+        });
+        
+        indicatorsContainer.innerHTML = indicatorsHtml;
+        innerContainer.innerHTML = innerHtml;
+
+        // Novedad CLAVE: Ocultar las flechas y los indicadores si solo hay 1 imagen
+        const controls = carouselElement.querySelectorAll('.carousel-control-prev, .carousel-control-next, .carousel-indicators');
+        controls.forEach(control => {
+            control.style.display = imagenes.length > 1 ? '' : 'none'; // Si hay más de 1 imagen, se muestran. Si no, se ocultan.
+        });
+    }
+
+    mostrarISBN(isbn) {
+        const container = document.getElementById('detalleISBN-container');
+        const element = document.getElementById('detalleISBN');
+        if (container && element && isbn) {
+            element.textContent = isbn;
+            container.style.display = 'list-item'; // Hacemos visible toda la fila del ISBN
+        } else if (container) {
+            container.style.display = 'none'; // Mantenemos oculta la fila si no hay ISBN
+        }
+    }
+
     configurarBotonesPDF(libro) {
         const botonesPDF = document.getElementById('botonesPDF');
         const mensajeNoPDF = document.getElementById('mensajeNoPDF');
@@ -80,50 +132,28 @@ class DetalleLibro {
         const btnDescargarPDF = document.getElementById('btnDescargarPDF');
 
         if (libro.archivo && libro.archivo.trim() !== '') {
-            // Mostrar botones PDF
             if (botonesPDF) botonesPDF.style.display = 'block';
             if (mensajeNoPDF) mensajeNoPDF.style.display = 'none';
 
-            // Configurar eventos reutilizando LibroService
             if (btnVerPDF) {
-                btnVerPDF.onclick = (e) => {
-                    e.preventDefault();
-                    if (window.LibroService && window.LibroService.abrirPDF) {
-                        window.LibroService.abrirPDF(libro.id);
-                    } else {
-                        window.open(`${this.apiUrl}/${libro.id}/pdf`, '_blank');
-                    }
-                };
+                btnVerPDF.onclick = (e) => { e.preventDefault(); (window.LibroService?.abrirPDF || (() => window.open(`${this.apiUrl}/${libro.id}/pdf`, '_blank')))(libro.id); };
             }
             if (btnDescargarPDF) {
-                btnDescargarPDF.onclick = (e) => {
-                    e.preventDefault();
-                    if (window.LibroService && window.LibroService.descargarPDFProxy) {
-                        window.LibroService.descargarPDFProxy(libro.id);
-                    } else if (window.LibroService && window.LibroService.descargarPDF) {
-                        window.LibroService.descargarPDF(libro.id);
-                    } else {
-                        // Fallback directo
-                        window.open(`${this.apiUrl}/${libro.id}/download/proxy`, '_blank');
-                    }
-                };
+                btnDescargarPDF.onclick = (e) => { e.preventDefault(); (window.LibroService?.descargarPDFProxy || (() => window.open(`${this.apiUrl}/${libro.id}/download/proxy`, '_blank')))(libro.id); };
             }
         } else {
-            // Mostrar mensaje de no disponible
             if (botonesPDF) botonesPDF.style.display = 'none';
             if (mensajeNoPDF) mensajeNoPDF.style.display = 'block';
         }
     }
 
     async initFavorito(){
-        // Referencias
         this.btnFavorito = document.getElementById('btnFavorito');
         this.iconFavorito = document.getElementById('iconFavorito');
         if(!this.btnFavorito || !window.FavoritoService || !authService?.isAuthenticated()) return;
         try {
             const estado = await FavoritoService.esFavorito(this.libroId);
-            const esFav = !!estado.favorito;
-            this.actualizarUIFavorito(esFav);
+            this.actualizarUIFavorito(!!estado.favorito);
         } catch(err){ console.warn('No se pudo obtener estado favorito inicial', err); }
         this.btnFavorito.addEventListener('click', async ()=>{
             if(!authService.isAuthenticated()) return;
@@ -131,69 +161,51 @@ class DetalleLibro {
             try {
                 const resp = await FavoritoService.toggle(this.libroId);
                 this.actualizarUIFavorito(!!resp.favorito);
-            } catch(err){
-                console.error('Error toggle favorito:', err);
-            } finally {
-                this.btnFavorito.disabled = false;
-            }
+            } catch(err){ console.error('Error toggle favorito:', err); } finally { this.btnFavorito.disabled = false; }
         });
     }
 
     actualizarUIFavorito(esFavorito){
-        if(!this.iconFavorito) return;
+        if(!this.iconFavorito || !this.btnFavorito) return;
         if(esFavorito){
-            this.iconFavorito.classList.remove('bi-heart');
-            this.iconFavorito.classList.add('bi-heart-fill');
-            this.btnFavorito?.classList.remove('btn-outline-danger');
-            this.btnFavorito?.classList.add('btn-danger');
+            this.iconFavorito.className = 'bi bi-heart-fill fs-4';
+            this.btnFavorito.classList.remove('btn-outline-danger');
+            this.btnFavorito.classList.add('btn-danger');
             this.btnFavorito.title = 'Quitar de favoritos';
         } else {
-            this.iconFavorito.classList.add('bi-heart');
-            this.iconFavorito.classList.remove('bi-heart-fill');
-            this.btnFavorito?.classList.add('btn-outline-danger');
-            this.btnFavorito?.classList.remove('btn-danger');
+            this.iconFavorito.className = 'bi bi-heart fs-4';
+            this.btnFavorito.classList.add('btn-outline-danger');
+            this.btnFavorito.classList.remove('btn-danger');
             this.btnFavorito.title = 'Agregar a favoritos';
         }
     }
 
     actualizarElemento(id, contenido) {
         const elemento = document.getElementById(id);
-        if (elemento) {
-            elemento.textContent = contenido;
-        }
+        if (elemento) elemento.textContent = contenido;
     }
 
     mostrarError(mensaje) {
-        // Crear mensaje de error
-        const errorHTML = `
-            <div class="container py-5">
+        const mainContent = document.querySelector('.container.py-5');
+        if (mainContent) {
+            mainContent.innerHTML = `
                 <div class="row justify-content-center">
                     <div class="col-md-6 text-center">
                         <div class="alert alert-danger">
                             <i class="bi bi-exclamation-triangle-fill fs-1 d-block mb-3"></i>
                             <h4>Error</h4>
                             <p>${mensaje}</p>
-                            <a href="index.html" class="btn btn-primary mt-3">
-                                <i class="bi bi-arrow-left-circle me-2"></i>Volver al Inicio
-                            </a>
+                            <a href="dashboard.html" class="btn btn-primary mt-3"><i class="bi bi-arrow-left-circle me-2"></i>Volver al Inicio</a>
                         </div>
                     </div>
-                </div>
-            </div>
-        `;
-
-        // Reemplazar contenido principal
-        const mainContent = document.querySelector('.container.py-5');
-        if (mainContent) {
-            mainContent.innerHTML = errorHTML;
+                </div>`;
         }
     }
 
     mostrarDescripcion(descripcion) {
         const descripcionSection = document.getElementById('descripcionSection');
         const detalleDescripcion = document.getElementById('detalleDescripcion');
-
-        if (descripcion && descripcion.trim() !== '') {
+        if (descripcion && descripcion.trim()) {
             if (descripcionSection) descripcionSection.style.display = 'block';
             if (detalleDescripcion) detalleDescripcion.textContent = descripcion;
         } else {
@@ -202,33 +214,13 @@ class DetalleLibro {
     }
 
     mostrarFechas(fechaCreacion, fechaActualizacion) {
-        // Formatear fecha de creación
-        if (fechaCreacion) {
-            const fechaCreacionFormateada = this.formatearFecha(fechaCreacion);
-            this.actualizarElemento('detalleFechaCreacion', fechaCreacionFormateada);
-        } else {
-            this.actualizarElemento('detalleFechaCreacion', 'No disponible');
-        }
-
-        // Formatear fecha de actualización
-        if (fechaActualizacion) {
-            const fechaActualizacionFormateada = this.formatearFecha(fechaActualizacion);
-            this.actualizarElemento('detalleFechaActualizacion', fechaActualizacionFormateada);
-        } else {
-            this.actualizarElemento('detalleFechaActualizacion', 'No disponible');
-        }
+        this.actualizarElemento('detalleFechaCreacion', fechaCreacion ? this.formatearFecha(fechaCreacion) : 'No disponible');
+        this.actualizarElemento('detalleFechaActualizacion', fechaActualizacion ? this.formatearFecha(fechaActualizacion) : 'No disponible');
     }
 
     formatearFecha(fecha) {
         try {
-            const fechaObj = new Date(fecha);
-            return fechaObj.toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            return new Date(fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         } catch (error) {
             console.error('Error al formatear fecha:', error);
             return 'Fecha inválida';
@@ -236,17 +228,6 @@ class DetalleLibro {
     }
 }
 
-// Función para volver a la búsqueda
-function volverABusqueda() {
-    window.location.href = 'buscar.html';
-}
-
-// Función para volver al dashboard
-function volverAInicio() {
-    window.location.href = 'dashboard.html';
-}
-
-// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new DetalleLibro();
 });

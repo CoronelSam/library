@@ -5,6 +5,7 @@ class EditarLibrosPage {
         this.paginaActual = 1;
         this.librosPorPagina = 10;
         this.libroSeleccionadoParaEliminar = null;
+        this.libroEnEdicion = null; 
         this.editarModal = null;
         this.eliminarModal = null;
         this.editGeneroInput = null;
@@ -41,7 +42,6 @@ class EditarLibrosPage {
         this.buscarInput = document.getElementById('buscar-input');
         this.buscarBtn = document.getElementById('buscar-btn');
         this.limpiarBtn = document.getElementById('limpiar-btn');
-        // Nuevos filtros múltiples
         this.selectRecorrido = document.getElementById('selectRecorrido');
         this.inputGenero = document.getElementById('inputGenero');
         this.inputAutor = document.getElementById('inputAutor');
@@ -52,11 +52,9 @@ class EditarLibrosPage {
         this.noLibrosMessage = document.getElementById('no-libros-message');
         this.paginationContainer = document.getElementById('pagination-container');
         this.paginationList = document.getElementById('pagination-list');
-        // Elementos de género (edición)
         this.editGeneroInput = document.getElementById('edit-genero-input');
         this.editGeneroSelect = document.getElementById('edit-genero-select');
         this.editGeneroSuggestions = document.getElementById('edit-genre-suggestions');
-        // Botón agregar desde búsqueda
         this.agregarDesdeBusquedaContainer = document.getElementById('agregar-desde-busqueda-container');
         this.agregarDesdeBusquedaBtn = document.getElementById('agregar-desde-busqueda-btn');
         this.agregarDesdeBusquedaTitulo = document.getElementById('agregar-desde-busqueda-titulo');
@@ -146,24 +144,9 @@ class EditarLibrosPage {
             });
         }
 
-        // Guardar cambios en modal de editar
-        document.getElementById('guardar-cambios-btn').addEventListener('click', () => {
-            this.guardarCambios();
-        });
-
-        // Confirmar eliminación
-        document.getElementById('confirmar-eliminar-btn').addEventListener('click', () => {
-            this.eliminarLibro();
-        });
-
-        // Limpiar formulario cuando se cierre el modal de editar
-        document.getElementById('editarLibroModal').addEventListener('hidden.bs.modal', () => {
-            this.limpiarFormularioEdicion();
-            if (this.editGeneroSuggestions) {
-                this.editGeneroSuggestions.innerHTML = '';
-                this.editGeneroSuggestions.style.display = 'none';
-            }
-        });
+        document.getElementById('guardar-cambios-btn').addEventListener('click', () => this.guardarCambios());
+        document.getElementById('confirmar-eliminar-btn').addEventListener('click', () => this.eliminarLibro());
+        document.getElementById('editarLibroModal').addEventListener('hidden.bs.modal', () => this.limpiarFormularioEdicion());
     }
 
     inicializarModales() {
@@ -221,23 +204,17 @@ class EditarLibrosPage {
         const fin = inicio + this.librosPorPagina;
         const librosParaMostrar = this.librosFiltrados.slice(inicio, fin);
 
-        // Renderizar filas de la tabla
         this.librosTabla.innerHTML = librosParaMostrar.map(libro => this.crearFilaLibro(libro)).join('');
 
-        // Renderizar paginación
         this.renderizarPaginacion();
-
-        // Agregar event listeners a los botones
         this.agregarEventListenersBotones();
         this.actualizarBotonAgregar();
     }
 
     crearFilaLibro(libro) {
         const portada = libro.portada 
-            ? `<img src="${libro.portada}" alt="Portada" class="img-thumbnail" style="width: 50px; height: 70px; object-fit: cover;">`
-            : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 70px; border-radius: 4px;">
-                 <i class="bi bi-book text-muted"></i>
-               </div>`;
+        ? `<img src="${libro.portada}" alt="Portada" class="img-thumbnail" style="width: 50px; height: 70px; object-fit: cover;">`
+        : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 70px; border-radius: 4px;"><i class="bi bi-book text-muted"></i></div>`;
 
         return `
             <tr>
@@ -245,25 +222,17 @@ class EditarLibrosPage {
                 <td>${portada}</td>
                 <td class="fw-bold">${libro.titulo}</td>
                 <td>${libro.autor}</td>
+                <td><span class="badge bg-primary rounded-pill">${libro.genero}</span></td>
+                <td>${libro.isbn || '<em class="text-muted">N/A</em>'}</td>
                 <td>
-                    <span class="badge bg-primary rounded-pill">${libro.genero}</span>
-                </td>
-                <td>${libro.editorial || '<em class="text-muted">No especificada</em>'}</td>
-                <td>${libro.año_publicacion || '<em class="text-muted">N/A</em>'}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-warning me-2 editar-btn" data-libro-id="${libro.id}">
-                        <i class="bi bi-pencil"></i> Editar
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger eliminar-btn" data-libro-id="${libro.id}">
-                        <i class="bi bi-trash"></i> Eliminar
-                    </button>
+                    <button class="btn btn-sm btn-outline-warning me-2 editar-btn" data-libro-id="${libro.id}"><i class="bi bi-pencil"></i> Editar</button>
+                    <button class="btn btn-sm btn-outline-danger eliminar-btn" data-libro-id="${libro.id}"><i class="bi bi-trash"></i> Eliminar</button>
                 </td>
             </tr>
         `;
     }
 
     agregarEventListenersBotones() {
-        // Botones de editar
         document.querySelectorAll('.editar-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const libroId = parseInt(e.currentTarget.dataset.libroId);
@@ -271,7 +240,6 @@ class EditarLibrosPage {
             });
         });
 
-        // Botones de eliminar
         document.querySelectorAll('.eliminar-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const libroId = parseInt(e.currentTarget.dataset.libroId);
@@ -287,43 +255,52 @@ class EditarLibrosPage {
             return;
         }
 
-        this.limpiarFormularioEdicion();
+        this.libroEnEdicion = JSON.parse(JSON.stringify(libro));
+        
+        document.getElementById('editar-libro-form').reset();
 
-        // Llenar el formulario con los datos del libro
-        document.getElementById('edit-libro-id').value = libro.id;
-        document.getElementById('edit-titulo').value = libro.titulo;
-        document.getElementById('edit-autor').value = libro.autor;
-        // Manejo de género: intentar encontrar opción en select, si no existe se coloca en input libre
+        document.getElementById('edit-libro-id').value = this.libroEnEdicion.id;
+        document.getElementById('edit-titulo').value = this.libroEnEdicion.titulo;
+        document.getElementById('edit-autor').value = this.libroEnEdicion.autor;
+        document.getElementById('edit-isbn').value = this.libroEnEdicion.isbn || '';
+        
         const generoSelect = document.getElementById('edit-genero-select');
         const generoInputLibre = document.getElementById('edit-genero-input');
         if (generoSelect) {
-            let encontrado = false;
-            Array.from(generoSelect.options).forEach(opt => {
-                if (opt.value.toLowerCase() === libro.genero.toLowerCase()) {
+            let encontrado = Array.from(generoSelect.options).some(opt => {
+                if (opt.value.toLowerCase() === this.libroEnEdicion.genero.toLowerCase()) {
                     generoSelect.value = opt.value;
-                    encontrado = true;
+                    return true;
                 }
+                return false;
             });
             if (!encontrado && generoInputLibre) {
-                generoSelect.value = 'Seleccionar género...';
-                generoInputLibre.value = libro.genero;
+                generoSelect.value = 'Otro';
+                generoInputLibre.value = this.libroEnEdicion.genero;
             } else if (encontrado && generoInputLibre) {
                 generoInputLibre.value = '';
             }
         }
-        document.getElementById('edit-editorial').value = libro.editorial || '';
-        document.getElementById('edit-año').value = libro.año_publicacion || '';
-        document.getElementById('edit-descripcion').value = libro.descripcion || '';
+        
+        document.getElementById('edit-editorial').value = this.libroEnEdicion.editorial || '';
+        
+        // ================== CORRECCIÓN CLAVE AQUÍ ==================
+        // Esta era la línea que faltaba y causaba que el año se viera en blanco.
+        document.getElementById('edit-año').value = this.libroEnEdicion.año_publicacion || '';
+        // =========================================================
+        
+        document.getElementById('edit-descripcion').value = this.libroEnEdicion.descripcion || '';
 
-        // Mostrar portada actual si existe
-        if (libro.portada) {
-            document.getElementById('portada-actual').src = libro.portada;
-            document.getElementById('portada-actual-container').style.display = 'block';
+        const portadaContainer = document.getElementById('portada-actual-container');
+        if (this.libroEnEdicion.portada) {
+            document.getElementById('portada-actual').src = this.libroEnEdicion.portada;
+            portadaContainer.style.display = 'block';
         } else {
-            document.getElementById('portada-actual-container').style.display = 'none';
+            portadaContainer.style.display = 'none';
         }
+        
+        this.renderizarGaleriaEdicion();
 
-        // Manejo PDF actual
         const archivoActualContainer = document.getElementById('archivo-actual-container');
         const sinArchivoContainer = document.getElementById('sin-archivo-container');
         const verArchivoLink = document.getElementById('ver-archivo-link');
@@ -332,43 +309,55 @@ class EditarLibrosPage {
         const eliminarCheckbox = document.getElementById('eliminar-archivo-checkbox');
         if (eliminarCheckbox) eliminarCheckbox.checked = false;
 
-        if (libro.archivo) {
+        if (this.libroEnEdicion.archivo) {
             archivoActualContainer.style.display = 'block';
             sinArchivoContainer.style.display = 'none';
             infoArchivo.textContent = 'Hay un PDF asociado a este libro';
-            // Enlaces usando helpers centralizados
-            verArchivoLink.href = LibroService.pdfViewUrl(libro.id);
-            descargarArchivoLink.href = LibroService.pdfDownloadUrl(libro.id, { proxy: true });
-            // También agregar listeners explícitos (por si el navegador bloquea target)
-            verArchivoLink.onclick = (e) => { e.preventDefault(); LibroService.abrirPDF(libro.id); };
-            descargarArchivoLink.onclick = (e) => { e.preventDefault(); LibroService.descargarPDFProxy ? LibroService.descargarPDFProxy(libro.id) : LibroService.descargarPDF(libro.id); };
+            verArchivoLink.href = LibroService.pdfViewUrl(this.libroEnEdicion.id);
+            descargarArchivoLink.href = LibroService.pdfDownloadUrl(this.libroEnEdicion.id, { proxy: true });
         } else {
             archivoActualContainer.style.display = 'none';
             sinArchivoContainer.style.display = 'block';
         }
 
-        // Configurar confirmación de eliminación PDF
-        if (eliminarCheckbox) {
-            eliminarCheckbox.onchange = (e) => {
-                if (e.target.checked) {
-                    const confirmado = window.confirm('¿Seguro que deseas eliminar el PDF actual? Esta acción no se puede deshacer si no subes otro antes de guardar.');
-                    if (!confirmado) {
-                        e.target.checked = false;
-                    }
-                }
-            };
-        }
-
-        const nuevoArchivoInput = document.getElementById('edit-archivo');
-        if (nuevoArchivoInput) {
-            nuevoArchivoInput.onchange = () => {
-                if (nuevoArchivoInput.files && nuevoArchivoInput.files.length > 0 && eliminarCheckbox && eliminarCheckbox.checked) {
-                    eliminarCheckbox.checked = false;
-                }
-            };
-        }
-
         this.editarModal.show();
+    }
+
+    renderizarGaleriaEdicion() {
+        const galeriaContainer = document.getElementById('galeria-imagenes-container');
+        const galeriaElement = document.getElementById('galeria-imagenes');
+        
+        galeriaElement.innerHTML = '';
+
+        if (this.libroEnEdicion && this.libroEnEdicion.imagenes_adicionales && this.libroEnEdicion.imagenes_adicionales.length > 0) {
+            galeriaContainer.style.display = 'block';
+            this.libroEnEdicion.imagenes_adicionales.forEach(url => {
+                const col = document.createElement('div');
+                col.className = 'col-md-3 col-4 mb-2 thumbnail-container';
+                col.innerHTML = `
+                    <img src="${url}" class="img-thumbnail" style="height: 100px; width: 100%; object-fit: cover;">
+                    <button type="button" class="btn btn-danger btn-sm thumbnail-delete-btn" data-url="${url}" title="Marcar para eliminar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                `;
+                galeriaElement.appendChild(col);
+            });
+
+            galeriaElement.querySelectorAll('.thumbnail-delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => this.eliminarImagenAdicional(e.currentTarget.dataset.url));
+            });
+        } else {
+            galeriaContainer.style.display = 'none';
+        }
+    }
+
+    eliminarImagenAdicional(urlAEliminar) {
+        if (!this.libroEnEdicion) return;
+
+        this.libroEnEdicion.imagenes_adicionales = this.libroEnEdicion.imagenes_adicionales.filter(url => url !== urlAEliminar);
+        
+        this.renderizarGaleriaEdicion();
+        UIUtils.mostrarToast('Imagen marcada para eliminar. Guarda los cambios para confirmar.', 'info');
     }
 
     abrirModalEliminar(libroId) {
@@ -387,31 +376,26 @@ class EditarLibrosPage {
         try {
             const libroId = document.getElementById('edit-libro-id').value;
             const portadaFile = document.getElementById('edit-portada').files[0];
-            const archivoFile = document.getElementById('edit-archivo') ? document.getElementById('edit-archivo').files[0] : null;
+            const archivoFile = document.getElementById('edit-archivo').files[0];
+            const nuevasImagenesFiles = Array.from(document.getElementById('edit-imagenes-adicionales').files);
             const eliminarArchivo = document.getElementById('eliminar-archivo-checkbox')?.checked || false;
 
-            // Recopilar datos del formulario
-            let añoRaw = document.getElementById('edit-año').value.trim();
-            if (añoRaw && !/^\d{1,4}$/.test(añoRaw)) {
-                console.warn('[EditarLibro] Año inválido ingresado, se ignorará:', añoRaw);
-                añoRaw = '';
-            }
+            // ================== CORRECCIÓN DEFINITIVA EN FRONT-END ==================
+            // Recogemos el valor del año como un string, sin convertirlo a `null` aquí.
+            // Si el campo está vacío, se enviará como una cadena vacía `''`.
+            // El backend se encargará de interpretarlo correctamente.
             const datosActualizados = {
                 titulo: document.getElementById('edit-titulo').value.trim(),
                 autor: document.getElementById('edit-autor').value.trim(),
-                genero: (function(){
-                    const sel = document.getElementById('edit-genero-select');
-                    const libre = document.getElementById('edit-genero-input');
-                    if (sel && sel.value && sel.value !== 'Seleccionar género...') return sel.value.trim();
-                    if (libre && libre.value.trim()) return libre.value.trim();
-                    return '';
-                })(),
+                isbn: document.getElementById('edit-isbn').value.trim() || null,
+                genero: document.getElementById('edit-genero-input').value.trim() || document.getElementById('edit-genero-select').value,
                 editorial: document.getElementById('edit-editorial').value.trim(),
-                año_publicacion: añoRaw ? parseInt(añoRaw, 10) : null,
-                descripcion: document.getElementById('edit-descripcion').value.trim()
+                anio_publicacion: document.getElementById('edit-año').value.trim(), // <-- ESTA LÍNEA ES LA CORREGIDA
+                descripcion: document.getElementById('edit-descripcion').value.trim(),
+                imagenes_adicionales: this.libroEnEdicion.imagenes_adicionales
             };
+            // =======================================================================
 
-            // Validar campos requeridos
             if (!datosActualizados.titulo || !datosActualizados.autor || !datosActualizados.genero) {
                 UIUtils.mostrarNotificacion('error', 'Título, autor y género son campos obligatorios');
                 return;
@@ -420,42 +404,37 @@ class EditarLibrosPage {
             const guardarBtn = document.getElementById('guardar-cambios-btn');
             UIUtils.mostrarLoading(guardarBtn, 'Guardando...');
 
-            // Crear FormData si hay archivo de portada, pdf o se quiere eliminar el existente
-            let formData;
-            if (portadaFile || archivoFile || eliminarArchivo) {
-                formData = new FormData();
-                Object.keys(datosActualizados).forEach(key => {
-                    const valor = datosActualizados[key] !== null ? datosActualizados[key] : '';
-                    formData.append(key, valor);
-                    if (key === 'año_publicacion' && valor !== '') {
-                        // Alias sin tilde
-                        formData.append('anio_publicacion', valor.toString());
-                    }
-                });
-                if (portadaFile) formData.append('portada', portadaFile);
-                if (archivoFile) formData.append('archivo', archivoFile);
-                if (eliminarArchivo) formData.append('removeArchivo', 'true');
-            } else {
-                // Añadir alias también en JSON si aplica
-                if (datosActualizados.año_publicacion !== null) {
-                    datosActualizados.anio_publicacion = datosActualizados.año_publicacion;
+            const formData = new FormData();
+            
+            Object.keys(datosActualizados).forEach(key => {
+                let valor = datosActualizados[key];
+                if (key === 'imagenes_adicionales' && Array.isArray(valor)) {
+                    valor = JSON.stringify(valor);
                 }
+                // Importante: FormData trata `null` como el texto "null", pero una cadena vacía viaja como tal.
+                formData.append(key, valor !== null ? valor : '');
+            });
+            
+            if (portadaFile) formData.append('portada', portadaFile);
+            if (archivoFile) formData.append('archivo', archivoFile);
+            if (eliminarArchivo) formData.append('removeArchivo', 'true');
+            if (nuevasImagenesFiles.length > 0) {
+                nuevasImagenesFiles.forEach(file => formData.append('imagenes_adicionales', file));
             }
 
-            const response = await LibroService.actualizar(libroId, formData || datosActualizados);
+            const response = await LibroService.actualizar(libroId, formData);
 
             if (response.success) {
-                UIUtils.mostrarNotificacion('success', 'Libro actualizado correctamente');
                 UIUtils.mostrarToast('Libro actualizado correctamente', 'success');
                 this.editarModal.hide();
-                await this.cargarLibros(); // Recargar la lista
+                await this.cargarLibros();
             } else {
                 throw new Error(response.mensaje || 'Error al actualizar libro');
             }
 
         } catch (error) {
-            console.error('❌ Error al actualizar libro:', error);
-            UIUtils.mostrarNotificacion('error', `Error al actualizar libro: ${error.message}`);
+            console.error('❌ Error al guardar cambios:', error);
+            UIUtils.mostrarNotificacion('error', `Error al actualizar: ${error.message}`);
         } finally {
             UIUtils.ocultarLoading(document.getElementById('guardar-cambios-btn'));
         }
@@ -473,7 +452,7 @@ class EditarLibrosPage {
             if (response.success) {
                 UIUtils.mostrarNotificacion('success', 'Libro eliminado correctamente');
                 this.eliminarModal.hide();
-                await this.cargarLibros(); // Recargar la lista
+                await this.cargarLibros();
             } else {
                 throw new Error(response.mensaje || 'Error al eliminar libro');
             }
@@ -498,36 +477,20 @@ class EditarLibrosPage {
         
         let paginacionHTML = '';
         
-        // Botón anterior
-        paginacionHTML += `
-            <li class="page-item ${this.paginaActual === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-pagina="${this.paginaActual - 1}">Anterior</a>
-            </li>
-        `;
+        paginacionHTML += `<li class="page-item ${this.paginaActual === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-pagina="${this.paginaActual - 1}">Anterior</a></li>`;
 
-        // Números de página
         for (let i = 1; i <= totalPaginas; i++) {
             if (i === 1 || i === totalPaginas || (i >= this.paginaActual - 2 && i <= this.paginaActual + 2)) {
-                paginacionHTML += `
-                    <li class="page-item ${i === this.paginaActual ? 'active' : ''}">
-                        <a class="page-link" href="#" data-pagina="${i}">${i}</a>
-                    </li>
-                `;
+                paginacionHTML += `<li class="page-item ${i === this.paginaActual ? 'active' : ''}"><a class="page-link" href="#" data-pagina="${i}">${i}</a></li>`;
             } else if (i === this.paginaActual - 3 || i === this.paginaActual + 3) {
                 paginacionHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
 
-        // Botón siguiente
-        paginacionHTML += `
-            <li class="page-item ${this.paginaActual === totalPaginas ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-pagina="${this.paginaActual + 1}">Siguiente</a>
-            </li>
-        `;
+        paginacionHTML += `<li class="page-item ${this.paginaActual === totalPaginas ? 'disabled' : ''}"><a class="page-link" href="#" data-pagina="${this.paginaActual + 1}">Siguiente</a></li>`;
 
         this.paginationList.innerHTML = paginacionHTML;
 
-        // Agregar event listeners a los enlaces de paginación
         this.paginationList.querySelectorAll('a.page-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -541,32 +504,11 @@ class EditarLibrosPage {
     }
 
     limpiarFormularioEdicion() {
-        // Limpiar todos los campos del formulario
-        document.getElementById('edit-libro-id').value = '';
-        document.getElementById('edit-titulo').value = '';
-        document.getElementById('edit-autor').value = '';
-    const generoSelect = document.getElementById('edit-genero-select');
-    const generoInputLibre = document.getElementById('edit-genero-input');
-    if (generoSelect) generoSelect.selectedIndex = 0;
-    if (generoInputLibre) generoInputLibre.value = '';
-        document.getElementById('edit-editorial').value = '';
-        document.getElementById('edit-año').value = '';
-        document.getElementById('edit-descripcion').value = '';
-        
-        // Limpiar campos de archivo - esto es lo más importante
-        document.getElementById('edit-portada').value = '';
-        
-        // Verificar si existe el campo de archivo (aunque no esté visible en el modal actual)
-        const archivoInput = document.getElementById('edit-archivo');
-        if (archivoInput) {
-            archivoInput.value = '';
-        }
-
-        // Ocultar portada actual
+        document.getElementById('editar-libro-form').reset();
         document.getElementById('portada-actual-container').style.display = 'none';
-        document.getElementById('portada-actual').src = '';
-
-        // Formulario de edición limpiado (log de debug removido)
+        document.getElementById('galeria-imagenes-container').style.display = 'none';
+        document.getElementById('galeria-imagenes').innerHTML = '';
+        this.libroEnEdicion = null;
     }
 
     mostrarLoading(mostrar) {
@@ -578,7 +520,6 @@ class EditarLibrosPage {
         const tabla = document.querySelector('.table-responsive');
         tabla.style.display = mostrar ? 'block' : 'none';
         this.noLibrosMessage.style.display = 'none';
-        // Quitar manejo directo de paginación aquí; se controla en renderizarPaginacion
     }
 
     mostrarMensajeSinLibros() {
@@ -592,7 +533,6 @@ class EditarLibrosPage {
     actualizarBotonAgregar() {
         if (!this.agregarDesdeBusquedaContainer) return;
         const termino = (this.buscarInput?.value || '').trim();
-        // Mostrar si hay término de búsqueda y no hay resultados exactos (sin sugerencias mostradas como resultados reales)
         const sinResultados = this.librosFiltrados.length === 0;
         if (termino && sinResultados) {
             this.agregarDesdeBusquedaTitulo.textContent = termino.length > 40 ? termino.slice(0,40)+'…' : termino;
@@ -620,7 +560,6 @@ class EditarLibrosPage {
             console.warn('[EditarLibros] BuscadorLibros util no cargado');
             return;
         }
-        // Creamos instancia que reutiliza los mismos endpoints
         this.buscador = BuscadorLibros.crear({
             obtenerRecorrido: (params)=> LibroService.obtenerRecorrido(params),
             busquedaOptimizada: (q, opts)=> LibroService.busquedaOptimizada(q, opts),
@@ -629,7 +568,6 @@ class EditarLibrosPage {
             limiteBusqueda: 300
         });
         this.buscador.onResultados = (lista, meta) => {
-            // En este contexto sólo nos interesa la lista resultante para filtrar tabla
             if(Array.isArray(lista)){
                 this.librosFiltrados = lista;
                 this.paginaActual = 1;
@@ -639,13 +577,11 @@ class EditarLibrosPage {
         };
         this.buscador.onEstado = (msg)=> { if(this.estadoBusqueda) this.estadoBusqueda.textContent = msg || ''; };
         this.buscador.onError = (m,e)=> console.error('[EditarLibros][Buscador]', m, e);
-        // Cargar recorrido inicial al iniciar buscador
         const tipoInicial = this.selectRecorrido ? this.selectRecorrido.value : 'inorden';
         this.buscador.cargarRecorrido({ tipo: tipoInicial, genero: this.inputGenero?.value.trim() || '', autor: this.inputAutor?.value.trim() || '', force: true });
     }
 }
 
-// Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     const editarPage = new EditarLibrosPage();
     editarPage.init();
