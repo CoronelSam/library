@@ -136,6 +136,14 @@ const login = async (req, res) => {
             });
         }
 
+        // Verificar si el usuario está activo
+        if (!usuarioEncontrado.activo) {
+            return res.status(403).json({
+                success: false,
+                message: 'Tu cuenta ha sido desactivada. Contacta al administrador.'
+            });
+        }
+
         // Verificar contraseña
         const claveValida = await usuarioEncontrado.compararClave(clave);
         if (!claveValida) {

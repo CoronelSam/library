@@ -1,7 +1,6 @@
 const { Favorito, Libro } = require('../models');
 
 class FavoritoController {
-  // Listar favoritos del usuario autenticado
   async listar(req, res){
     try {
       const usuarioId = req.usuario.id;

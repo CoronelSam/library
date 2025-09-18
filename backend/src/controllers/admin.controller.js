@@ -3,13 +3,11 @@ const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
 
-// Listar todos los usuarios (solo admin)
 const listarUsuarios = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '', rol = '' } = req.query;
         const offset = (page - 1) * limit;
         
-        // Construir condiciones de filtro
         let whereConditions = {};
         
         if (search) {
@@ -68,7 +66,6 @@ const cambiarRol = async (req, res) => {
         const { id } = req.params;
         const { rol } = req.body;
 
-        // Verificar que el usuario a modificar existe
         const usuario = await Usuario.findByPk(id);
         if (!usuario) {
             return res.status(404).json({
@@ -77,7 +74,6 @@ const cambiarRol = async (req, res) => {
             });
         }
 
-        // No permitir que un admin se quite el rol a sí mismo
         if (usuario.id === req.usuario.id && rol !== 'admin') {
             return res.status(400).json({
                 success: false,
@@ -85,7 +81,6 @@ const cambiarRol = async (req, res) => {
             });
         }
 
-        // Actualizar el rol
         await usuario.update({ rol });
 
         res.json({
@@ -105,7 +100,6 @@ const cambiarRol = async (req, res) => {
         console.error('Error al cambiar rol:', error);
         console.error('Stack trace:', error.stack);
         
-        // Proporcionar mensaje más específico según el tipo de error
         let mensaje = 'Error interno del servidor';
         
         if (error.name === 'SequelizeValidationError') {
@@ -122,7 +116,6 @@ const cambiarRol = async (req, res) => {
     }
 };
 
-// Obtener estadísticas de usuarios (solo admin)
 const estadisticasUsuarios = async (req, res) => {
     try {
         const estadisticas = await Usuario.findAll({
@@ -155,7 +148,6 @@ const estadisticasUsuarios = async (req, res) => {
     }
 };
 
-// Desactivar/activar usuario (solo admin)
 const toggleActivarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
@@ -168,7 +160,6 @@ const toggleActivarUsuario = async (req, res) => {
             });
         }
 
-        // No permitir que un admin se desactive a sí mismo
         if (usuario.id === req.usuario.id) {
             return res.status(400).json({
                 success: false,
@@ -176,7 +167,6 @@ const toggleActivarUsuario = async (req, res) => {
             });
         }
 
-        // Cambiar estado activo
         await usuario.update({ activo: !usuario.activo });
 
         res.json({

@@ -366,7 +366,6 @@ async subirImagenAdicional(archivo, libroId, index) {
     }
 }
 
-// Crear instancia singleton
 const cloudinaryAdapter = new CloudinaryAdapter();
 
 module.exports = {

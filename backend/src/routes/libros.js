@@ -9,7 +9,6 @@ const {
     validarOrientacionImagenes
 } = require('../middleware/upload');
 
-// Rutas sin archivos
 router.get('/', libroController.obtenerTodos);
 router.get('/buscar', libroController.buscar);
 router.get('/autocompletar', libroController.autocompletar);
@@ -19,12 +18,10 @@ router.get('/recorridos', libroController.obtenerRecorrido);
 router.get('/:id', libroController.obtenerPorId);
 router.get('/:id/estadisticas-descarga', libroController.obtenerEstadisticasDescarga);
 
-// Rutas para PDFs
 router.get('/:id/pdf', libroController.obtenerPDF);
 router.get('/:id/download', libroController.descargarPDF);
 router.get('/:id/download/proxy', libroController.descargarPDFProxy);
 
-// Rutas con manejo de archivos
 router.post('/', 
     cleanupTempFiles,           
     uploadLibroFiles,          

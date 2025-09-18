@@ -4,7 +4,6 @@ const { cleanupFiles } = require('../middleware/upload');
 const Libro = require('../models/Libro');
 const { Op } = require('sequelize');
 
-// Esta función sigue siendo util para la CREACIÓN de libros.
 function normalizarDatosLibro(datos) {
     return {
         ...datos,
@@ -34,11 +33,9 @@ async function subirImagenesAdicionales(archivos, libroId) {
 
 
 class LibroController {
-    // Los métodos obtenerTodos, obtenerPorId, y crear no necesitan cambios.
     async obtenerTodos(req, res) {
         try {
             const { ordenar = 'titulo' } = req.query;
-            // Siempre consultar la base de datos para obtener información actualizada incluyendo descargas
             const libros = await Libro.findAll({ order: [[ordenar, 'ASC']] });
 
             res.json({ success: true, data: libros, total: libros.length, mensaje: 'Libros obtenidos correctamente' });
@@ -51,7 +48,6 @@ class LibroController {
     async obtenerPorId(req, res) {
         try {
             const { id } = req.params;
-            // Consultar directamente la base de datos para obtener información actualizada incluyendo descargas
             const libro = await Libro.findByPk(id);
 
             if (!libro) {
@@ -118,12 +114,9 @@ class LibroController {
         const datosActualizados = { ...req.body };
     
         if (datosActualizados.hasOwnProperty('anio_publicacion')) {
-        // Crea la clave correcta que el modelo espera.
         datosActualizados.año_publicacion = datosActualizados.anio_publicacion;
-        // Elimina la clave temporal que usamos para el transporte.
         delete datosActualizados.anio_publicacion;
     }
-        // A partir de aquí, `datosActualizados` es un objeto normal y todo funcionará.
 
         const libro = await Libro.findByPk(id);
         if (!libro) {
@@ -152,7 +145,6 @@ class LibroController {
         }
         datosActualizados.imagenes_adicionales = imagenesFinales;
 
-        // Llamamos al servicio con nuestro objeto ya normalizado.
         const libroActualizado = await libroService.actualizarLibroConArchivos(id, datosActualizados, archivos);
         
         res.json({ success: true, data: libroActualizado, mensaje: 'Libro actualizado correctamente' });
@@ -163,10 +155,7 @@ class LibroController {
         res.status(500).json({ success: false, mensaje: 'Error interno al actualizar el libro', error: error.message });
     }
 }
-    
 
-
-    // El resto de los métodos no necesitan cambios.
     async eliminar(req, res) {
         try {
             const { id } = req.params;
@@ -182,7 +171,6 @@ class LibroController {
         }
     }
 
-    // Obtener PDF para visualización
     async obtenerPDF(req, res) {
         try {
             const { id } = req.params;
@@ -213,7 +201,6 @@ class LibroController {
         }
     }
 
-    // Descargar PDF con nombre apropiado
     async descargarPDF(req, res) {
         try {
             const { id } = req.params;
@@ -225,7 +212,6 @@ class LibroController {
                 return res.status(404).json({ success: false, mensaje: 'Este libro no tiene archivo PDF disponible' });
             }
             
-            // Incrementar contador de descargas
             await libro.increment('descargas');
             
             const nombreArchivo = `${libro.titulo.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${libro.autor.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.pdf`;
@@ -236,8 +222,6 @@ class LibroController {
             return res.status(500).json({ success: false, error: error.message, mensaje: 'Error al descargar el archivo PDF' });
         }
     }
-
-    // Descargar PDF forzando descarga
     async descargarPDFProxy(req, res) {
         try {
             const { id } = req.params;
@@ -249,7 +233,6 @@ class LibroController {
                 return res.status(404).json({ success: false, mensaje: 'Este libro no tiene archivo PDF disponible' });
             }
             
-            // Incrementar contador de descargas
             await libro.increment('descargas');
             
             const nombreArchivo = `${libro.titulo.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${libro.autor.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.pdf`;
@@ -276,7 +259,6 @@ class LibroController {
         }
     }
 
-    // Buscar libros
     async buscar(req, res) {
         try {
             const { q: termino, tipo = 'general' } = req.query;
@@ -329,7 +311,6 @@ class LibroController {
         }
     }
 
-    // Autocompletado
     async autocompletar(req, res) {
         try {
             const { q: prefijo, campo = 'titulo' } = req.query;
@@ -359,7 +340,6 @@ class LibroController {
         }
     }
 
-    // Nueva búsqueda optimizada
     async busquedaOptimizada(req, res) {
         try {
             const { q = '', limite = '100', prefijo = 'true', genero, autor } = req.query;
@@ -404,13 +384,11 @@ class LibroController {
         }
     }
 
-    // Obtener estadísticas
     async obtenerEstadisticas(req, res) {
         try {
             const estadisticas = libroService.obtenerEstadisticas();
             const consistencia = await libroService.verificarConsistencia();
             
-            // Calcular libros descargados (libros con descargas > 0)
             const librosDescargados = await Libro.count({
                 where: {
                     descargas: {
@@ -438,7 +416,6 @@ class LibroController {
         }
     }
 
-    //obtener recorrido del árbol
     async obtenerRecorrido(req, res) {
         try {
             const { tipo = 'inorden', limite = '200', genero, autor, q } = req.query;

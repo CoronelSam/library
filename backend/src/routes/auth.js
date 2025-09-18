@@ -5,7 +5,6 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// Validaciones para registro
 const validacionesRegistro = [
     body('usuario')
         .isLength({ min: 5 })
@@ -35,7 +34,6 @@ const validacionesLogin = [
         .withMessage('La contraseña es requerida')
 ];
 
-// Rutas
 router.post('/registro', validacionesRegistro, registro);
 router.post('/login', validacionesLogin, login);
 router.get('/verificar', auth, verificarToken);

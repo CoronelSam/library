@@ -77,14 +77,11 @@ class LibroService {
     }
   }
 
-  // REEMPLAZA LA FUNCIÓN COMPLETA EN TU LibroService.js CON ESTA:
-// REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA:
 async actualizarLibroConArchivos(id, datosActualizados, archivos = null) {
     try {
         const libro = await Libro.findByPk(id);
         if (!libro) throw new Error('Libro no encontrado');
 
-        // Limpieza de datos
         if (datosActualizados.hasOwnProperty('año_publicacion')) {
             const año = datosActualizados.año_publicacion;
             datosActualizados.año_publicacion = (año === '' || año === 'null' || año === null || año === undefined) ? null : parseInt(año, 10);
@@ -92,8 +89,6 @@ async actualizarLibroConArchivos(id, datosActualizados, archivos = null) {
         if (datosActualizados.isbn === '') datosActualizados.isbn = null;
         if (datosActualizados.editorial === '') datosActualizados.editorial = null;
         if (datosActualizados.descripcion === '') datosActualizados.descripcion = null;
-
-        // El resto de tu lógica de archivos...
         const eliminarArchivoPDF = datosActualizados.removeArchivo === 'true';
 
         if (archivos && archivos.portada && archivos.portada[0]) {
@@ -193,7 +188,6 @@ async actualizarLibroConArchivos(id, datosActualizados, archivos = null) {
     }
   }
 
-  // Obtener recorrido del árbol (preorden, inorden, postorden)
   obtenerRecorrido(tipo = "inorden") {
     const t = (tipo || "").toLowerCase();
     switch (t) {
