@@ -60,6 +60,9 @@ class DetalleLibro {
 
         // Novedad: Mostrar el ISBN si existe
         this.mostrarISBN(libro.isbn);
+        
+        // Mostrar contador de descargas
+        this.mostrarDescargas(libro.descargas || 0);
 
         // Mostrar descripción si existe
         this.mostrarDescripcion(libro.descripcion);
@@ -125,6 +128,15 @@ class DetalleLibro {
         }
     }
 
+    mostrarDescargas(descargas) {
+        const element = document.getElementById('detalleDescargas');
+        if (element) {
+            // Formatear el número con separadores de miles si es necesario
+            const descargasFormateadas = new Intl.NumberFormat('es-ES').format(descargas);
+            element.textContent = descargasFormateadas;
+        }
+    }
+
     configurarBotonesPDF(libro) {
         const botonesPDF = document.getElementById('botonesPDF');
         const mensajeNoPDF = document.getElementById('mensajeNoPDF');
@@ -139,7 +151,13 @@ class DetalleLibro {
                 btnVerPDF.onclick = (e) => { e.preventDefault(); (window.LibroService?.abrirPDF || (() => window.open(`${this.apiUrl}/${libro.id}/pdf`, '_blank')))(libro.id); };
             }
             if (btnDescargarPDF) {
-                btnDescargarPDF.onclick = (e) => { e.preventDefault(); (window.LibroService?.descargarPDFProxy || (() => window.open(`${this.apiUrl}/${libro.id}/download/proxy`, '_blank')))(libro.id); };
+                btnDescargarPDF.onclick = (e) => { 
+                    e.preventDefault(); 
+                    // Ejecutar descarga
+                    (window.LibroService?.descargarPDFProxy || (() => window.open(`${this.apiUrl}/${libro.id}/download/proxy`, '_blank')))(libro.id);
+                    // Actualizar contador después de un pequeño delay
+                    setTimeout(() => this.actualizarContadorDescargas(), 1000);
+                };
             }
         } else {
             if (botonesPDF) botonesPDF.style.display = 'none';
@@ -177,6 +195,20 @@ class DetalleLibro {
             this.btnFavorito.classList.add('btn-outline-danger');
             this.btnFavorito.classList.remove('btn-danger');
             this.btnFavorito.title = 'Agregar a favoritos';
+        }
+    }
+
+    async actualizarContadorDescargas() {
+        try {
+            const response = await fetch(`${this.apiUrl}/${this.libroId}/estadisticas-descarga`);
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                this.mostrarDescargas(data.data.descargas);
+            }
+        } catch (error) {
+            console.error('Error al actualizar contador de descargas:', error);
+            // No mostrar error al usuario, es solo una actualización de estadísticas
         }
     }
 

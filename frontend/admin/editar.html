@@ -315,6 +315,42 @@
             <label for="edit-descripcion" class="form-label">Descripción</label>
             <textarea class="form-control" id="edit-descripcion" rows="3"></textarea>
           </div>
+
+          <!-- Estadísticas del libro -->
+          <div class="mb-4">
+            <h6 class="form-label text-muted mb-3">
+              <i class="bi bi-bar-chart-fill text-info me-2"></i>Estadísticas del Libro
+            </h6>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="card border-info">
+                  <div class="card-body text-center py-3">
+                    <i class="bi bi-download text-info fs-4 d-block mb-2"></i>
+                    <h5 class="mb-1" id="estadistica-descargas">-</h5>
+                    <small class="text-muted">Descargas</small>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card border-secondary">
+                  <div class="card-body text-center py-3">
+                    <i class="bi bi-calendar-plus text-secondary fs-4 d-block mb-2"></i>
+                    <h6 class="mb-1" id="estadistica-fecha-creacion">-</h6>
+                    <small class="text-muted">Fecha Agregado</small>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card border-warning">
+                  <div class="card-body text-center py-3">
+                    <i class="bi bi-calendar-check text-warning fs-4 d-block mb-2"></i>
+                    <h6 class="mb-1" id="estadistica-fecha-actualizacion">-</h6>
+                    <small class="text-muted">Última Actualización</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           
           <!-- Portada actual -->
           <div id="portada-actual-container" class="mb-3" style="display: none;">

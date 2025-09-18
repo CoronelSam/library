@@ -99,6 +99,17 @@ const Libro = sequelize.define('Libro', {
     descripcion: {
         type: DataTypes.TEXT,
         allowNull: true
+    },
+    descargas: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        validate: {
+            min: {
+                args: [0],
+                msg: 'El número de descargas no puede ser negativo'
+            }
+        }
     }
 }, {
     tableName: 'libros',

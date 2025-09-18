@@ -17,6 +17,7 @@ router.get('/busqueda', libroController.busquedaOptimizada);
 router.get('/estadisticas', libroController.obtenerEstadisticas);
 router.get('/recorridos', libroController.obtenerRecorrido);
 router.get('/:id', libroController.obtenerPorId);
+router.get('/:id/estadisticas-descarga', libroController.obtenerEstadisticasDescarga);
 
 // Rutas para PDFs
 router.get('/:id/pdf', libroController.obtenerPDF);

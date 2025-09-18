@@ -4,7 +4,7 @@ const { cleanupFiles } = require('../middleware/upload');
 const Libro = require('../models/Libro');
 const { Op } = require('sequelize');
 
-// Esta función sigue siendo útil para la CREACIÓN de libros.
+// Esta función sigue siendo util para la CREACIÓN de libros.
 function normalizarDatosLibro(datos) {
     return {
         ...datos,
@@ -38,9 +38,8 @@ class LibroController {
     async obtenerTodos(req, res) {
         try {
             const { ordenar = 'titulo' } = req.query;
-            let libros = (ordenar === 'titulo')
-                ? libroService.obtenerTodosLosLibros()
-                : await Libro.findAll({ order: [[ordenar, 'ASC']] });
+            // Siempre consultar la base de datos para obtener información actualizada incluyendo descargas
+            const libros = await Libro.findAll({ order: [[ordenar, 'ASC']] });
 
             res.json({ success: true, data: libros, total: libros.length, mensaje: 'Libros obtenidos correctamente' });
         } catch (error) {
@@ -52,7 +51,8 @@ class LibroController {
     async obtenerPorId(req, res) {
         try {
             const { id } = req.params;
-            let libro = libroService.buscarPorId(parseInt(id)) || await Libro.findByPk(id);
+            // Consultar directamente la base de datos para obtener información actualizada incluyendo descargas
+            const libro = await Libro.findByPk(id);
 
             if (!libro) {
                 return res.status(404).json({ success: false, mensaje: 'Libro no encontrado' });
@@ -111,22 +111,12 @@ class LibroController {
             res.status(500).json({ success: false, error: error.message, mensaje: 'Error al crear el libro' });
         }
     }
-    
-    // EN EL ARCHIVO libro.controller.js QUE ME DISTE
-
-// REEMPLAZA TU FUNCIÓN ACTUAL CON ESTA VERSIÓN MÁS LIMPIA:
-// REEMPLAZA TU FUNCIÓN "actualizar" COMPLETA CON ESTA.
-async actualizar(req, res) {
+    async actualizar(req, res) {
     try {
         const { id } = req.params;
         const archivos = req.files;
-
-        // ================================================================
-        // ¡¡¡AQUÍ ESTÁ LA LÍNEA QUE ARREGLA TODO!!!
-        // Convertimos el objeto especial de multer (req.body) en un objeto
-        // de JavaScript normal y corriente usando el spread operator (`...`).
         const datosActualizados = { ...req.body };
-        // ================================================================
+    
         if (datosActualizados.hasOwnProperty('anio_publicacion')) {
         // Crea la clave correcta que el modelo espera.
         datosActualizados.año_publicacion = datosActualizados.anio_publicacion;
@@ -234,6 +224,10 @@ async actualizar(req, res) {
             if (!libro.archivo) {
                 return res.status(404).json({ success: false, mensaje: 'Este libro no tiene archivo PDF disponible' });
             }
+            
+            // Incrementar contador de descargas
+            await libro.increment('descargas');
+            
             const nombreArchivo = `${libro.titulo.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${libro.autor.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.pdf`;
             const urlDescarga = cloudinaryAdapter.generarURLDescarga(libro.archivo, nombreArchivo);
             return res.redirect(urlDescarga);
@@ -254,6 +248,10 @@ async actualizar(req, res) {
             if (!libro.archivo) {
                 return res.status(404).json({ success: false, mensaje: 'Este libro no tiene archivo PDF disponible' });
             }
+            
+            // Incrementar contador de descargas
+            await libro.increment('descargas');
+            
             const nombreArchivo = `${libro.titulo.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${libro.autor.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.pdf`;
 
             const respuesta = await fetch(libro.archivo);
@@ -411,10 +409,23 @@ async actualizar(req, res) {
         try {
             const estadisticas = libroService.obtenerEstadisticas();
             const consistencia = await libroService.verificarConsistencia();
+            
+            // Calcular libros descargados (libros con descargas > 0)
+            const librosDescargados = await Libro.count({
+                where: {
+                    descargas: {
+                        [Op.gt]: 0
+                    }
+                }
+            });
 
             res.json({
                 success: true,
-                data: { ...estadisticas, consistencia },
+                data: { 
+                    ...estadisticas, 
+                    consistencia,
+                    librosDescargados 
+                },
                 mensaje: 'Estadísticas obtenidas correctamente'
             });
         } catch (error) {
@@ -464,6 +475,41 @@ async actualizar(req, res) {
         } catch (error) {
             console.error('Error al obtener recorrido:', error);
             return res.status(500).json({ success: false, mensaje: 'Error al obtener recorrido', error: error.message });
+        }
+    }
+
+    // Obtener estadísticas de descargas de un libro específico
+    async obtenerEstadisticasDescarga(req, res) {
+        try {
+            const { id } = req.params;
+            const libro = await Libro.findByPk(id, {
+                attributes: ['id', 'titulo', 'autor', 'descargas']
+            });
+            
+            if (!libro) {
+                return res.status(404).json({ 
+                    success: false, 
+                    mensaje: 'Libro no encontrado' 
+                });
+            }
+
+            return res.json({
+                success: true,
+                data: {
+                    libroId: libro.id,
+                    titulo: libro.titulo,
+                    autor: libro.autor,
+                    descargas: libro.descargas
+                },
+                mensaje: 'Estadísticas de descarga obtenidas correctamente'
+            });
+        } catch (error) {
+            console.error('Error al obtener estadísticas de descarga:', error);
+            return res.status(500).json({ 
+                success: false, 
+                mensaje: 'Error al obtener estadísticas de descarga', 
+                error: error.message 
+            });
         }
     }
 }

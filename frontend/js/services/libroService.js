@@ -99,16 +99,16 @@ class LibroService {
 
     static abrirPDFProxy(libroId) {
         // Intentar abrir proxy primero (para forzar encabezados), fallback a directo
-        const proxyUrl = this.pdfDownloadUrl(libroId, { proxy: true });
+        const proxyUrl = LibroService.pdfDownloadUrl(libroId, { proxy: true });
         const win = window.open(proxyUrl, '_blank');
         if (!win) {
             console.warn('[LibroService] No se pudo abrir ventana proxy, fallback ver PDF');
-            window.open(this.pdfViewUrl(libroId), '_blank');
+            window.open(LibroService.pdfViewUrl(libroId), '_blank');
         }
     }
 
     static descargarPDFProxy(libroId) {
-        window.open(this.pdfDownloadUrl(libroId, { proxy: true }), '_blank');
+        window.open(LibroService.pdfDownloadUrl(libroId, { proxy: true }), '_blank');
     }
 
     /**

@@ -315,10 +315,24 @@ class EditarLibrosPage {
             infoArchivo.textContent = 'Hay un PDF asociado a este libro';
             verArchivoLink.href = LibroService.pdfViewUrl(this.libroEnEdicion.id);
             descargarArchivoLink.href = LibroService.pdfDownloadUrl(this.libroEnEdicion.id, { proxy: true });
+            
+            // Agregar evento para actualizar estadísticas después de descarga
+            descargarArchivoLink.onclick = (e) => {
+                e.preventDefault();
+                // Realizar descarga
+                LibroService.descargarPDFProxy ? LibroService.descargarPDFProxy(this.libroEnEdicion.id) : LibroService.descargarPDF(this.libroEnEdicion.id);
+                // Actualizar estadísticas después de un pequeño delay
+                setTimeout(() => {
+                    this.actualizarEstadisticasDescarga(this.libroEnEdicion.id);
+                }, 1000);
+            };
         } else {
             archivoActualContainer.style.display = 'none';
             sinArchivoContainer.style.display = 'block';
         }
+
+        // Mostrar estadísticas del libro
+        this.mostrarEstadisticasLibro();
 
         this.editarModal.show();
     }
@@ -580,9 +594,75 @@ class EditarLibrosPage {
         const tipoInicial = this.selectRecorrido ? this.selectRecorrido.value : 'inorden';
         this.buscador.cargarRecorrido({ tipo: tipoInicial, genero: this.inputGenero?.value.trim() || '', autor: this.inputAutor?.value.trim() || '', force: true });
     }
+
+    mostrarEstadisticasLibro() {
+        if (!this.libroEnEdicion) return;
+
+        // Mostrar descargas
+        const elementoDescargas = document.getElementById('estadistica-descargas');
+        if (elementoDescargas) {
+            const descargas = this.libroEnEdicion.descargas || 0;
+            elementoDescargas.textContent = new Intl.NumberFormat('es-ES').format(descargas);
+        }
+
+        // Mostrar fecha de creación
+        const elementoFechaCreacion = document.getElementById('estadistica-fecha-creacion');
+        if (elementoFechaCreacion && this.libroEnEdicion.createdAt) {
+            try {
+                const fecha = new Date(this.libroEnEdicion.createdAt);
+                elementoFechaCreacion.textContent = fecha.toLocaleDateString('es-ES', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric' 
+                });
+            } catch (error) {
+                elementoFechaCreacion.textContent = 'No disponible';
+            }
+        }
+
+        // Mostrar fecha de actualización
+        const elementoFechaActualizacion = document.getElementById('estadistica-fecha-actualizacion');
+        if (elementoFechaActualizacion && this.libroEnEdicion.updatedAt) {
+            try {
+                const fecha = new Date(this.libroEnEdicion.updatedAt);
+                elementoFechaActualizacion.textContent = fecha.toLocaleDateString('es-ES', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric' 
+                });
+            } catch (error) {
+                elementoFechaActualizacion.textContent = 'No disponible';
+            }
+        }
+    }
+
+    async actualizarEstadisticasDescarga(libroId) {
+        try {
+            // Consultar estadísticas actualizadas del backend
+            const response = await fetch(`${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/estadisticas-descarga`);
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                // Actualizar el campo de descargas en la interfaz
+                const elementoDescargas = document.getElementById('estadistica-descargas');
+                if (elementoDescargas) {
+                    elementoDescargas.textContent = new Intl.NumberFormat('es-ES').format(data.data.descargas);
+                }
+                
+                // Actualizar también el libro en edición para mantener consistencia
+                if (this.libroEnEdicion && this.libroEnEdicion.id === libroId) {
+                    this.libroEnEdicion.descargas = data.data.descargas;
+                }
+            }
+        } catch (error) {
+            console.error('Error al actualizar estadísticas de descarga:', error);
+            // No mostrar error al usuario, es solo una actualización de estadísticas
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const editarPage = new EditarLibrosPage();
+    window.editarLibrosPageInstance = editarPage;
     editarPage.init();
 });

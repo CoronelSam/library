@@ -1,5 +1,6 @@
 (function(){
   const elTotalLibros = document.getElementById('stat-total-libros');
+  const elLibrosDescargados = document.getElementById('stat-libros-descargados');
   const elGeneroPopular = document.getElementById('stat-genero-popular');
   const elGeneroPopularCount = document.getElementById('stat-genero-popular-count');
   const elUsuarios = document.getElementById('stat-usuarios-registrados');
@@ -11,11 +12,11 @@
   }
 
   function setLoading(){
-    [elTotalLibros, elGeneroPopular, elGeneroPopularCount, elUsuarios].forEach(el => { if(el) el.textContent = '...'; });
+    [elTotalLibros, elLibrosDescargados, elGeneroPopular, elGeneroPopularCount, elUsuarios].forEach(el => { if(el) el.textContent = '...'; });
   }
 
   function setError(){
-    [elTotalLibros, elGeneroPopular, elGeneroPopularCount, elUsuarios].forEach(el => { if(el) el.textContent = 'N/D'; });
+    [elTotalLibros, elLibrosDescargados, elGeneroPopular, elGeneroPopularCount, elUsuarios].forEach(el => { if(el) el.textContent = 'N/D'; });
   }
 
   async function cargarEstadisticasLibros(){
@@ -28,6 +29,7 @@
       if(!resp.ok || !data.success) throw new Error(data.mensaje || 'Error');
       const stats = data.data || {};
       setValue(elTotalLibros, stats.totalLibros != null ? stats.totalLibros : 0);
+      setValue(elLibrosDescargados, stats.librosDescargados != null ? stats.librosDescargados : 0);
       if (stats.topGenero && stats.topGenero.genero) {
         setValue(elGeneroPopular, stats.topGenero.genero);
         setValue(elGeneroPopularCount, stats.topGenero.cantidad);
