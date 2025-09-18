@@ -46,7 +46,7 @@ class ArbolGeneros {
 
     async cargarDatosArboles(force = false) {
         try {
-            // Obtener recorrido inorden desde backend (usa arbol binario del backend)
+            // Obtener recorrido inorden desde backend
             const resp = await window.LibroService.obtenerRecorrido({ 
                 tipo: 'inorden', 
                 limite: 1000 
@@ -54,7 +54,6 @@ class ArbolGeneros {
             
             this.librosInorden = Array.isArray(resp?.data) ? resp.data : [];
             
-            // Construir lista de categorías únicas (géneros)
             const setGen = new Set();
             for (const libro of this.librosInorden) {
                 const genero = (libro.genero && libro.genero.trim()) 

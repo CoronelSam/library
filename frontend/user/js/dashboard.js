@@ -6,7 +6,6 @@ class Dashboard {
     }
 
     async init() {
-        // Verificar autenticación
         if (!authService.isAuthenticated()) {
             window.location.href = '../login.html';
             return;
@@ -14,7 +13,6 @@ class Dashboard {
 
         const userRole = authService.getUserRole();
         if (userRole === 'admin' || userRole === 'mod') {
-            // Redirigir al panel de administración
             window.location.href = '../admin/admin.html';
             return;
         }
@@ -31,7 +29,6 @@ class Dashboard {
 
     async cargarLibros() {
         try {
-            // Incluir token en la petición
             const token = authService.getToken();
             const response = await fetch(this.apiUrl, {
                 headers: {
@@ -62,7 +59,6 @@ class Dashboard {
         if (botonCerrarSesion) {
             botonCerrarSesion.addEventListener('click', (e) => {
                 e.preventDefault();
-                // Mostrar confirmación antes de cerrar sesión
                 if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
                     authService.logout();
                 }
@@ -101,7 +97,6 @@ class Dashboard {
         const añoTexto = libro.año_publicacion ? `(${libro.año_publicacion})` : '';
         const tienePDF = libro.archivo && libro.archivo.trim() !== '';
 
-        // Botones PDF si están disponibles
         const botonesPDF = tienePDF ? `
             <div class="btn-group d-flex mb-2" role="group">
                 <button class="btn btn-sm btn-success flex-fill" onclick="verPDF(${libro.id})" title="Ver PDF">
@@ -151,23 +146,18 @@ class Dashboard {
     }
 }
 
-// Función global para navegar al detalle
 function irADetalle(libroId) {
     window.location.href = `detalle.html?id=${libroId}`;
 }
 
-// Funciones globales para manejar PDFs
 function verPDF(libroId) {
     try {
-        // Priorizar LibroService helpers centralizados
         if (window.LibroService && window.LibroService.abrirPDF) {
             return window.LibroService.abrirPDF(libroId);
         }
-        // Fallback a util previo si existe
         if (window.librosDownload && window.librosDownload.verPDF) {
             return window.librosDownload.verPDF(libroId);
         }
-        // Fallback final directo
         const base = API_CONFIG?.FULL_ENDPOINTS?.LIBROS || (API_CONFIG?.API_URL + '/libros');
         window.open(`${base}/${libroId}/pdf`, '_blank');
     } catch (error) {
@@ -202,7 +192,6 @@ function descargarPDF(libroId) {
     }
 }
 
-// Inicializar dashboard cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     new Dashboard();
 });

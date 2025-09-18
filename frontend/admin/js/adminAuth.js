@@ -1,15 +1,12 @@
-// Verificación de autenticación para el panel admin
 document.addEventListener('DOMContentLoaded', function() {
     verificarAccesoAdmin();
     configurarNavegacion();
 });
 
-// Verificar que el usuario tenga acceso al panel admin
 function verificarAccesoAdmin() {
     const token = localStorage.getItem('token');
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-    
-    // Permitir acceso a admin y moderador
+
     if (!token || !['admin', 'mod'].includes(usuario.rol)) {
         mostrarModalAccesoDenegado();
         return false;
@@ -18,21 +15,18 @@ function verificarAccesoAdmin() {
     return true;
 }
 
-// Configurar navegación según el rol del usuario
 function configurarNavegacion() {
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     
-    // Ocultar enlace de gestión de usuarios si no es admin
     const enlaceUsuarios = document.querySelector('a[href="gestion-usuarios.html"]');
     if (enlaceUsuarios && usuario.rol !== 'admin') {
         enlaceUsuarios.style.display = 'none';
     }
     
-    // Mostrar información del usuario en la navbar
     mostrarInfoUsuario(usuario);
 }
 
-// Mostrar información del usuario en la navbar
+
 function mostrarInfoUsuario(usuario) {
     const rolBadge = document.getElementById('rolBadge');
     const nombreUsuario = document.getElementById('nombreUsuario');
@@ -53,7 +47,6 @@ function mostrarInfoUsuario(usuario) {
     }
 }
 
-// Modal de acceso denegado
 function mostrarModalAccesoDenegado() {
     const modalHTML = `
         <div class="modal fade" id="accessDeniedModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -98,7 +91,6 @@ function mostrarModalAccesoDenegado() {
     modal.show();
 }
 
-// Funciones de redirección
 function redirigirLogin() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
@@ -109,7 +101,6 @@ function volverInicio() {
     window.location.href = '../index.html';
 }
 
-// Función de logout
 function logout() {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
         localStorage.removeItem('token');
@@ -118,7 +109,6 @@ function logout() {
     }
 }
 
-// Verificar permisos específicos
 function verificarPermisoAdmin() {
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     return usuario.rol === 'admin';

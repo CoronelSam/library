@@ -1,4 +1,3 @@
-// Utilidades para validación de datos
 class Validation {
     
     // Validar título
@@ -55,7 +54,6 @@ class Validation {
         return { valido: true };
     }
 
-    // Validar email (para futuras funcionalidades)
     static validarEmail(email) {
         if (!email) {
             return { valido: true }; // Campo opcional

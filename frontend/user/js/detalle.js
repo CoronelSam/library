@@ -1,4 +1,3 @@
-// JavaScript para la página de detalle del libro
 class DetalleLibro {
     constructor() {
         this.libroId = null;
@@ -45,32 +44,20 @@ class DetalleLibro {
     }
 
     mostrarDetalleLibro(libro) {
-        // Actualizar título de la página
         document.title = `${libro.titulo} - Biblioteca`;
 
-        // Novedad: Llamar a la función que construye y muestra la galería
         this.configurarGaleria(libro);
 
-        // Actualizar información básica
         this.actualizarElemento('detalleTitulo', libro.titulo || 'Título no disponible');
         this.actualizarElemento('detalleAutor', libro.autor || 'Autor desconocido');
         this.actualizarElemento('detalleGenero', libro.genero || 'Género no especificado');
         this.actualizarElemento('detalleAnio', libro.año_publicacion || 'No especificado');
         this.actualizarElemento('detalleEditorial', libro.editorial || 'No especificada');
 
-        // Novedad: Mostrar el ISBN si existe
         this.mostrarISBN(libro.isbn);
-        
-        // Mostrar contador de descargas
         this.mostrarDescargas(libro.descargas || 0);
-
-        // Mostrar descripción si existe
         this.mostrarDescripcion(libro.descripcion);
-
-        // Mostrar fechas del sistema
         this.mostrarFechas(libro.createdAt, libro.updatedAt);
-
-        // Configurar botones de PDF
         this.configurarBotonesPDF(libro);
     }
 
@@ -84,11 +71,8 @@ class DetalleLibro {
             return;
         }
 
-        // Creamos un array con todas las imágenes: primero la portada, luego las adicionales.
-        // El .filter(Boolean) elimina cualquier entrada nula o vacía.
         const imagenes = [libro.portada, ...(libro.imagenes_adicionales || [])].filter(Boolean);
 
-        // Si después de filtrar no hay imágenes, ponemos una por defecto.
         if (imagenes.length === 0) {
             imagenes.push('https://via.placeholder.com/400x600.png/E9ECEF/343A40?text=Sin+Portada');
         }
@@ -96,7 +80,6 @@ class DetalleLibro {
         let indicatorsHtml = '';
         let innerHtml = '';
 
-        // Construimos el HTML para cada imagen en la galería
         imagenes.forEach((url, index) => {
             const esActiva = index === 0 ? 'active' : '';
             indicatorsHtml += `<button type="button" data-bs-target="#libroGaleria" data-bs-slide-to="${index}" class="${esActiva}" aria-current="true"></button>`;
@@ -110,10 +93,9 @@ class DetalleLibro {
         indicatorsContainer.innerHTML = indicatorsHtml;
         innerContainer.innerHTML = innerHtml;
 
-        // Novedad CLAVE: Ocultar las flechas y los indicadores si solo hay 1 imagen
         const controls = carouselElement.querySelectorAll('.carousel-control-prev, .carousel-control-next, .carousel-indicators');
         controls.forEach(control => {
-            control.style.display = imagenes.length > 1 ? '' : 'none'; // Si hay más de 1 imagen, se muestran. Si no, se ocultan.
+            control.style.display = imagenes.length > 1 ? '' : 'none';
         });
     }
 
@@ -122,16 +104,15 @@ class DetalleLibro {
         const element = document.getElementById('detalleISBN');
         if (container && element && isbn) {
             element.textContent = isbn;
-            container.style.display = 'list-item'; // Hacemos visible toda la fila del ISBN
+            container.style.display = 'list-item';
         } else if (container) {
-            container.style.display = 'none'; // Mantenemos oculta la fila si no hay ISBN
+            container.style.display = 'none';
         }
     }
 
     mostrarDescargas(descargas) {
         const element = document.getElementById('detalleDescargas');
         if (element) {
-            // Formatear el número con separadores de miles si es necesario
             const descargasFormateadas = new Intl.NumberFormat('es-ES').format(descargas);
             element.textContent = descargasFormateadas;
         }
@@ -153,9 +134,7 @@ class DetalleLibro {
             if (btnDescargarPDF) {
                 btnDescargarPDF.onclick = (e) => { 
                     e.preventDefault(); 
-                    // Ejecutar descarga
                     (window.LibroService?.descargarPDFProxy || (() => window.open(`${this.apiUrl}/${libro.id}/download/proxy`, '_blank')))(libro.id);
-                    // Actualizar contador después de un pequeño delay
                     setTimeout(() => this.actualizarContadorDescargas(), 1000);
                 };
             }
@@ -208,7 +187,6 @@ class DetalleLibro {
             }
         } catch (error) {
             console.error('Error al actualizar contador de descargas:', error);
-            // No mostrar error al usuario, es solo una actualización de estadísticas
         }
     }
 

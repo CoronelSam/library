@@ -66,8 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
       }
 
-      const resp = await authService.actualizarPerfil(payload);
-      console.debug('[EditarCuenta] Respuesta actualizarPerfil:', resp);
+  const resp = await authService.actualizarPerfil(payload);
       if (resp.success) {
         const user = authService.getCurrentUser();
         document.getElementById('usuarioActual').value = user.usuario;
@@ -113,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (typeof window.mostrarToast === 'function') {
       window.mostrarToast(msg, tipo, duracion);
     } else {
-      console.log(`[TOAST:${tipo}]`, msg);
+      alert(msg);
     }
   }
 

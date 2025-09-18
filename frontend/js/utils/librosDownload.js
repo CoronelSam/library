@@ -24,8 +24,6 @@
     const primary = opciones.proxy ? buildProxyDownloadURL(id) : buildDownloadURL(id);
     openInNewTab(primary);
     if (opciones.proxy && opciones.fallback === true) {
-      // se podria intentar un chequeo posterior, pero window.open no da feedback.
-      // mantener un placeholder para ampliar (beacon, health ping, etc.).
     }
   }
 

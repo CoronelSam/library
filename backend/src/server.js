@@ -12,7 +12,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// CORS configurable por entorno
 const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
     : null;
@@ -27,18 +26,14 @@ if (allowedOrigins) {
     );
 }
 
-// Servir archivos estáticos del frontend (solo si existe esa carpeta)
 try {
     const frontendPath = path.join(__dirname, '../../frontend');
     app.use(express.static(frontendPath));
 } catch (_) {
-    // En producción normalmente el frontend estará en otro hosting (Netlify/Vercel)
 }
 
-// Servir archivos estáticos
 app.use('/uploads', express.static('uploads'));
 
-// CORS abierto (fallback) solo si no se configuró CORS_ORIGIN
 if (!allowedOrigins) {
     app.use((req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
@@ -91,6 +86,13 @@ app.use('/api/libros', require('./routes/libros'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/favoritos', require('./routes/favoritos'));
+
+app.use((req, res, next) => {
+    req.on('aborted', () => {
+        console.warn('⚠️ Solicitud abortada por el cliente:', req.method, req.originalUrl);
+    });
+    next();
+});
 
 app.use((error, req, res, next) => {
     console.error('❌ Error en la aplicación:', error);

@@ -13,7 +13,6 @@ class AgregarLibroPage {
         this.prefillTituloDesdeQuery();
         this.inicializarFormulario();
         this.inicializarAutocompletadoCompartido();
-        console.log('📚 [AgregarLibro] Página inicializada');
     }
 
     validarDependencias() {
@@ -76,7 +75,7 @@ class AgregarLibroPage {
             UIUtils.mostrarLoading(guardarBtn, 'Guardando...');
             UIUtils.limpiarNotificaciones();
 
-            // ▶▶▶ OBTENER ARCHIVOS - ESTO ES LO QUE FALTABA
+            // Obtener archivos seleccionados (portada, PDF e imágenes adicionales)
             const portadaFile = document.getElementById('portada')?.files[0];
             const archivoFile = document.getElementById('archivo')?.files[0];
             const imagenesAdicionalesInput = document.getElementById('imagenes_adicionales');
@@ -104,7 +103,7 @@ class AgregarLibroPage {
 
             let datosParaEnviar;
             
-            // ▶▶▶ CAMBIAR LA CONDICIÓN PARA INCLUIR IMÁGENES ADICIONALES
+            // Incluir archivos si se cargaron (portada/PDF/imagenes adicionales)
             if (portadaFile || archivoFile || imagenesAdicionalesFiles.length > 0) {
                 datosParaEnviar = new FormData();
                 
@@ -133,7 +132,7 @@ class AgregarLibroPage {
                     datosParaEnviar.append('portada', portadaFile);
                 }
 
-                // ▶▶▶ AGREGAR IMÁGENES ADICIONALES AL FORM DATA
+                // Agregar imágenes adicionales al FormData
                 if (imagenesAdicionalesFiles.length > 0) {
                     imagenesAdicionalesFiles.forEach((file, index) => {
                         datosParaEnviar.append('imagenes_adicionales', file);
@@ -207,7 +206,7 @@ class AgregarLibroPage {
         
         const portadaInput = document.getElementById('portada');
         const archivoInput = document.getElementById('archivo');
-        const imagenesInput = document.getElementById('imagenes_adicionales'); // ▶▶▶ NUEVO
+    const imagenesInput = document.getElementById('imagenes_adicionales');
         
         if (portadaInput) {
             portadaInput.value = '';
@@ -225,7 +224,7 @@ class AgregarLibroPage {
             }
         }
         
-        // ▶▶▶ LIMPIAR INPUT DE IMÁGENES ADICIONALES
+    // Limpiar input de imágenes adicionales
         if (imagenesInput) {
             imagenesInput.value = '';
             if (imagenesInput.files && imagenesInput.files.length) {
@@ -247,7 +246,7 @@ class AgregarLibroPage {
             
             const portadaInput = document.getElementById('portada');
             const archivoInput = document.getElementById('archivo');
-            const imagenesInput = document.getElementById('imagenes_adicionales'); // ▶▶▶ NUEVO
+            const imagenesInput = document.getElementById('imagenes_adicionales');
             
             [portadaInput, archivoInput, imagenesInput].forEach(inp => {
                 if (inp) {

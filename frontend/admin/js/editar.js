@@ -22,7 +22,6 @@ class EditarLibrosPage {
         this.inicializarAutocompletadoCompartido();
         await this.cargarLibros();
         this.inicializarBuscadorCompartido();
-        console.log('📚 [EditarLibros] Página inicializada');
     }
 
     validarDependencias() {

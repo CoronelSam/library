@@ -26,12 +26,10 @@
     libros.forEach(l => {
       const tr = document.createElement('tr');
       
-      // Generar la imagen de portada (igual que en editar.js)
       const portada = l.portada 
         ? `<img src="${l.portada}" alt="Portada" class="img-thumbnail" style="width: 50px; height: 70px; object-fit: cover;">`
         : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 70px; border-radius: 4px;"><i class="bi bi-book text-muted"></i></div>`;
       
-      // Mostrar ISBN en lugar del año de publicación
       tr.innerHTML = `
         <td>${portada}</td>
         <td>${escapeHtml(l.titulo)}</td>
@@ -45,7 +43,6 @@
     if(tbody) tbody.appendChild(frag);
   }
 
-  // Crear instancia del buscador compartido
   const buscador = BuscadorLibros.crear({
     obtenerRecorrido: (params) => LibroService.obtenerRecorrido(params),
     busquedaOptimizada: (q, opts) => LibroService.busquedaOptimizada(q, opts),
@@ -101,7 +98,6 @@
   }
 
   function initEventos(){
-    // Event listeners para la búsqueda
     if(inputBusqueda){
       inputBusqueda.addEventListener('input', onInputBusqueda);
     }

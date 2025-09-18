@@ -1,4 +1,3 @@
-// public/js/utils/galeria.js - ARCHIVO NUEVO
 class GaleriaImagenes {
     constructor(containerId, imagenes) {
         this.container = document.getElementById(containerId);
@@ -10,7 +9,6 @@ class GaleriaImagenes {
     inicializar() {
         if (!this.container || this.imagenes.length === 0) return;
 
-        // Crear miniaturas
         this.imagenes.forEach((imagen, index) => {
             const miniatura = document.createElement('div');
             miniatura.className = 'col-md-3 mb-3';
@@ -23,7 +21,6 @@ class GaleriaImagenes {
             this.container.appendChild(miniatura);
         });
 
-        // Crear modal para visualización completa
         this.crearModal();
     }
 
@@ -75,10 +72,8 @@ class GaleriaImagenes {
     }
 }
 
-// Instancia global
 window.galeria = null;
 
-// Función para inicializar galería
 function inicializarGaleria(containerId, imagenes) {
     window.galeria = new GaleriaImagenes(containerId, imagenes);
     window.galeria.inicializar();

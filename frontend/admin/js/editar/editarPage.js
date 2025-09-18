@@ -29,7 +29,6 @@ class EditarLibrosPage {
     wireEventosBusqueda(this);
     this.wireBotonAgregarDesdeBusqueda();
     this.wireAccionesCRUD();
-    console.log('📚 [EditarLibros] Página inicializada (modular)');
   }
   validarDependencias(){
     const deps = ['API_CONFIG','APP_CONSTANTS','LibroService','UIUtils'];

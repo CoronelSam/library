@@ -29,7 +29,6 @@
       if (typeof mostrarToast === 'function') { // reutilizar global si existe
         return mostrarToast(mensaje, tipo, duracion);
       }
-      // Fallback mínimo si no existe util global
       alert(mensaje);
     }
   };

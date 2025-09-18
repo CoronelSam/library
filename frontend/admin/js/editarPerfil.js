@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (typeof window.mostrarToast === 'function') {
       window.mostrarToast(msg, tipo, duracion);
     } else {
-      console.log(`[TOAST:${tipo}]`, msg);
+      alert(msg);
     }
   }
 });

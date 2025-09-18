@@ -6,21 +6,17 @@ class LibroService {
                 method: 'POST'
             };
 
-            // Si es FormData (tiene archivos), no agregar Content-Type
             if (datosLibro instanceof FormData) {
-                // Incluir headers como Authorization pero omitir Content-Type para que el navegador establezca el boundary
                 if (API_CONFIG?.REQUEST_CONFIG?.headers) {
                     const headers = { ...API_CONFIG.REQUEST_CONFIG.headers };
                     delete headers['Content-Type'];
                     delete headers['content-type'];
-                    // Solo añadir si queda al menos algún header (ej. Authorization)
                     if (Object.keys(headers).length > 0) {
                         options.headers = headers;
                     }
                 }
                 options.body = datosLibro;
             } else {
-                // Si es JSON normal
                 options.headers = API_CONFIG.REQUEST_CONFIG.headers;
                 options.body = JSON.stringify(datosLibro);
             }
@@ -98,7 +94,6 @@ class LibroService {
     }
 
     static abrirPDFProxy(libroId) {
-        // Intentar abrir proxy primero (para forzar encabezados), fallback a directo
         const proxyUrl = LibroService.pdfDownloadUrl(libroId, { proxy: true });
         const win = window.open(proxyUrl, '_blank');
         if (!win) {
@@ -120,7 +115,6 @@ class LibroService {
         return libro && libro.archivo && libro.archivo.trim() !== '';
     }
 
-    // Obtener un libro por ID
     static async obtenerPorId(id) {
         try {
             const response = await fetch(`${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${id}`);
@@ -146,28 +140,23 @@ class LibroService {
                 return { success: false, mensaje: 'Token no encontrado' };
             }
 
-            // fetch es la forma correcta de enviar FormData
             const response = await fetch(`${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}`, {
                 method: 'PUT',
                 headers: {
-                    // ¡Importante! NO establezcas 'Content-Type' aquí.
-                    // El navegador lo hará automáticamente con el 'boundary' correcto para FormData.
                     'Authorization': `Bearer ${token}`
                 },
-                body: formData // Envía el objeto FormData directamente
+                body: formData
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                // Si la respuesta del servidor es un error (4xx, 5xx), lanza una excepción
                 throw new Error(data.mensaje || `Error del servidor: ${response.status}`);
             }
 
             return data;
         } catch (error) {
             console.error('Error en LibroService.actualizar (frontend):', error);
-            // Devuelve un objeto de error consistente para que el `catch` en editar.js pueda manejarlo
             return { success: false, mensaje: error.message };
         }
     }
@@ -227,7 +216,7 @@ class LibroService {
         }
     }
 
-    //búsqueda optimizada (usa árbol con prefijo/general)
+    //busqueda optimizada (usa arbol con prefijo/general)
     static async busquedaOptimizada(q, opciones = {}) {
         try {
             const params = new URLSearchParams();
@@ -286,7 +275,7 @@ class LibroService {
         }
     }
 
-    // Nuevo: obtener recorrido del árbol desde backend
+    //obtener recorrido del arbol desde el back
     static async obtenerRecorrido(params = {}) {
         try {
             const urlParams = new URLSearchParams();
@@ -309,14 +298,6 @@ class LibroService {
         }
     }
 
-    // Nota: Descarga manejada directamente en UI (dashboard/detalle) para evitar duplicar helpers aquí.
-    // Si se requiere en el futuro: 
-    // static crearURLDescarga(libroId, proxy = true) {
-    //     return proxy 
-    //        ? `${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/download/proxy` 
-    //        : `${API_CONFIG.FULL_ENDPOINTS.LIBROS}/${libroId}/download`;
-    // }
 }
 
-// Exportar servicio
 window.LibroService = LibroService;

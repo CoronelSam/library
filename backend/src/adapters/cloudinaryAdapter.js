@@ -83,7 +83,7 @@ async subirImagenAdicional(archivo, libroId, index) {
             height: 1200,
             crop: 'fill',
             gravity: 'center',
-            overwrite: false, // No sobrescribir para mantener histórico
+            overwrite: false,
             invalidate: true
         };
 
@@ -131,10 +131,8 @@ async subirImagenAdicional(archivo, libroId, index) {
                 invalidate: true
             };
 
-            // Subir archivo a Cloudinary
             const resultado = await this.cloudinary.uploader.upload(archivo.path, options);
 
-            // Limpiar archivo temporal
             await this.limpiarArchivoTemporal(archivo.path);
 
             return {
@@ -145,7 +143,6 @@ async subirImagenAdicional(archivo, libroId, index) {
             };
 
         } catch (error) {
-            // Limpiar archivo temporal en caso de error
             if (archivo && archivo.path) {
                 await this.limpiarArchivoTemporal(archivo.path);
             }
@@ -246,7 +243,6 @@ async subirImagenAdicional(archivo, libroId, index) {
             format = 'jpg'
         } = opciones;
 
-        // Extraer public_id de la URL
         const matches = url.match(/\/v\d+\/(.+)\./);
         if (!matches) return url;
 
@@ -302,13 +298,12 @@ async subirImagenAdicional(archivo, libroId, index) {
         try {
             // Patrones para diferentes formatos de URL de Cloudinary
             const patrones = [
-                // Formato estándar: https://res.cloudinary.com/cloud/resource_type/upload/v123/folder/file.ext
                 /\/upload\/v\d+\/(.+?)(?:\.[^.]+)?$/,
-                // Formato sin versión: https://res.cloudinary.com/cloud/resource_type/upload/folder/file.ext
+
                 /\/upload\/(.+?)(?:\.[^.]+)?$/,
-                // Formato con transformaciones: https://res.cloudinary.com/cloud/image/upload/w_500,h_300/v123/folder/file.ext
+               
                 /\/upload\/[^/]*\/v\d+\/(.+?)(?:\.[^.]+)?$/,
-                // Formato raw: https://res.cloudinary.com/cloud/raw/upload/v123/folder/file.ext
+                
                 /\/raw\/upload\/v\d+\/(.+?)(?:\.[^.]+)?$/
             ];
 

@@ -10,7 +10,6 @@
     const generos = (opts.generos && Array.isArray(opts.generos) ? opts.generos : (window.APP_CONSTANTS?.GENEROS || [])).slice();
     const max = opts.max || window.APP_CONSTANTS?.UI_CONFIG?.MAX_SUGGESTIONS || 8;
 
-    // Estado interno
     let visible = false;
 
     function limpiarSugerencias(){
@@ -39,11 +38,10 @@
       render(lista);
     }
 
-    // Eventos --------------------------------------------------
     input.addEventListener('input', (e)=>{
       filtrar(e.target.value);
       if(select && select.selectedIndex>0){
-        select.selectedIndex = 0; // si escribe manual, deseleccionar
+        select.selectedIndex = 0;
       }
     });
 

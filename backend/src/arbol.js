@@ -11,7 +11,6 @@ class ArbolLibros {
         this.raiz = null;
     }
 
-    // Método para ingresar un libro
     ingresarLibro(libro) {
         const nuevoNodo = new Nodo(libro);
         if (this.raiz === null) {
@@ -22,7 +21,6 @@ class ArbolLibros {
     }
 
     #insertarRecursivo(nodoActual, nuevoNodo) {
-        // Comparación por título (clave primaria)
         const tituloNuevo = nuevoNodo.libro.titulo.toLowerCase();
         const tituloActual = nodoActual.libro.titulo.toLowerCase();
         
@@ -84,9 +82,7 @@ class ArbolLibros {
         }
     }
 
-    // MÉTODOS DE BÚSQUEDA ESPECIALIZADOS PARA LIBROS
-
-    // Búsqueda eficiente por título (clave primaria del árbol)
+    // Búsqueda eficiente por título
     buscarPorTitulo(titulo) {
         return this.#buscarTituloRecursivo(this.raiz, titulo.toLowerCase());
     }
@@ -151,8 +147,7 @@ class ArbolLibros {
         return resultados;
     }
 
-    // arbol.js - MODIFICAR la función #buscarGeneralRecursivo:
-#buscarGeneralRecursivo(nodo, termino, resultados) {
+    #buscarGeneralRecursivo(nodo, termino, resultados) {
     if (nodo !== null) {
         this.#buscarGeneralRecursivo(nodo.izquierdo, termino, resultados);
         
@@ -181,9 +176,6 @@ class ArbolLibros {
         return Math.max(alturaIzquierda, alturaDerecha) + 1;
     }
 
-    // MÉTODOS DE SUGERENCIAS INTELIGENTES
-
-    // Distancia de Levenshtein para búsqueda difusa
     #distanciaLevenshtein(str1, str2) {
         const matriz = [];
         const n = str1.length;
@@ -214,14 +206,12 @@ class ArbolLibros {
         return matriz[n][m];
     }
 
-    // Sugerencias cuando no se encuentra coincidencia exacta
     obtenerSugerencias(termino, maxSugerencias = 5, umbralDistancia = 3) {
         const sugerencias = [];
         const terminoBuscado = termino.toLowerCase();
         
         this.#recopilarSugerencias(this.raiz, terminoBuscado, sugerencias, umbralDistancia);
         
-        // Ordenar por similitud (menor distancia = mayor similitud)
         sugerencias.sort((a, b) => a.distancia - b.distancia);
         
         return sugerencias.slice(0, maxSugerencias).map(item => item.libro);
@@ -233,11 +223,9 @@ class ArbolLibros {
             const titulo = libro.titulo.toLowerCase();
             const autor = libro.autor.toLowerCase();
             
-            // Calcular distancia para título
             const distanciaTitulo = this.#distanciaLevenshtein(termino, titulo);
             const distanciaAutor = this.#distanciaLevenshtein(termino, autor);
             
-            // Usar la menor distancia
             const distanciaMinima = Math.min(distanciaTitulo, distanciaAutor);
             
             if (distanciaMinima <= umbral) {
@@ -252,7 +240,6 @@ class ArbolLibros {
         }
     }
 
-    // Búsqueda por prefijo (autocompletado)
     buscarPorPrefijo(prefijo, campo = 'titulo') {
         const resultados = [];
         const prefijoLower = prefijo.toLowerCase();
@@ -273,7 +260,6 @@ class ArbolLibros {
         }
     }
 
-    // Hijos de un nodo por título del libro
     obtenerHijos(titulo) {
         const nodo = this.#buscarNodoPorTitulo(this.raiz, titulo.toLowerCase());
         if (nodo) {
@@ -296,7 +282,6 @@ class ArbolLibros {
             : this.#buscarNodoPorTitulo(nodoActual.derecho, titulo);
     }
 
-    // Obtener padre de un libro por título
     obtenerPadre(titulo) {
         const padre = this.#buscarPadre(this.raiz, titulo.toLowerCase(), null);
         return padre ? padre.libro : null;
@@ -312,7 +297,6 @@ class ArbolLibros {
         return this.#buscarPadre(nodoActual.derecho, tituloBuscado, nodoActual);
     }
 
-    // Obtener ancho del árbol (número de nodos en el nivel más amplio)
     ancho() {
         if (this.raiz === null) return 0;
         
@@ -333,14 +317,10 @@ class ArbolLibros {
         return maxAncho;
     }
 
-    // MÉTODOS ADICIONALES PARA LA LIBRERÍA
-
-    // Obtener todos los libros ordenados por título
     obtenerTodosLosLibros() {
         return this.inOrden();
     }
 
-    // Contar total de libros
     contarLibros() {
         return this.#contarNodos(this.raiz);
     }
@@ -350,12 +330,10 @@ class ArbolLibros {
         return 1 + this.#contarNodos(nodo.izquierdo) + this.#contarNodos(nodo.derecho);
     }
 
-    // Verificar si el árbol está vacío
     estaVacio() {
         return this.raiz === null;
     }
 
-    // Obtener libro por ID (búsqueda en todo el árbol)
     buscarPorId(id) {
         return this.#buscarIdRecursivo(this.raiz, id);
     }
@@ -373,7 +351,6 @@ class ArbolLibros {
         return this.#buscarIdRecursivo(nodo.derecho, id);
     }
 
-    // Obtener estadísticas del árbol
     obtenerEstadisticas() {
         return {
             totalLibros: this.contarLibros(),
@@ -383,22 +360,18 @@ class ArbolLibros {
         };
     }
 
-    // Limpiar el árbol
     limpiar() {
         this.raiz = null;
     }
 
-    // Cargar múltiples libros (útil para inicialización desde BD)
     cargarLibros(libros) {
         this.limpiar();
         libros.forEach(libro => this.ingresarLibro(libro));
     }
 }
 
-// Crear instancia singleton del árbol de libros
 const arbolLibros = new ArbolLibros();
 
-// Exportar la clase y la instancia
 module.exports = {
     ArbolLibros,
     arbolLibros

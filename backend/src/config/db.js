@@ -2,7 +2,6 @@ const { Sequelize } = require('sequelize');
 const { getCurrentDBConfig } = require('./config');
 require('dotenv').config();
 
-// Obtener configuración del ambiente actual
 const dbConfig = getCurrentDBConfig();
 
 const sequelize = new Sequelize(

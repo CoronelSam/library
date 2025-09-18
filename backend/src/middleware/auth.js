@@ -37,7 +37,6 @@ const auth = async (req, res, next) => {
     }
 };
 
-// Middleware para verificar roles específicos
 const requireRole = (roles) => {
     return (req, res, next) => {
         if (!req.usuario) {
