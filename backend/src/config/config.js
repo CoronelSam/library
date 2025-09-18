@@ -51,9 +51,9 @@ const config = {
     "timezone": "-06:00",
     "logging": false, // Sin logs en producción
     "dialectOptions": {
-      "ssl": {
-        "require": true,
-        "rejectUnauthorized": false
+      "ssl": process.env.DB_SSL_DISABLE === 'true' ? undefined : {
+        "require": process.env.DB_SSL_REQUIRE === 'false' ? false : true,
+        "rejectUnauthorized": process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true'
       }
     },
     "pool": {

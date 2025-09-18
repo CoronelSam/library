@@ -1,6 +1,10 @@
 // Configuración de la API
-const API_BASE_URL = 'http://localhost:3001';
-const API_URL = 'http://localhost:3001/api';
+// Permite override por window.API_BASE_URL_OVERRIDE / window.API_URL_OVERRIDE para producción
+const DEFAULT_API_BASE_URL = 'http://localhost:3001';
+const DEFAULT_API_URL = 'http://localhost:3001/api';
+
+const API_BASE_URL = (typeof window !== 'undefined' && window.API_BASE_URL_OVERRIDE) || DEFAULT_API_BASE_URL;
+const API_URL = (typeof window !== 'undefined' && window.API_URL_OVERRIDE) || DEFAULT_API_URL;
 
 const API_CONFIG = {
     BASE_URL: API_BASE_URL,
